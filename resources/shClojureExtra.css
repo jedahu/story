@@ -1,0 +1,7 @@
+.clojure.syntaxhighlighter .meta {
+    opacity: 0.6 !important;
+}
+
+.clojure.syntaxhighlighter .quoted {      
+    font-style: italic !important;
+}

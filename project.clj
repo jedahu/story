@@ -4,7 +4,7 @@
 ; comments into HTML (via [Markdown]) and nicely highlights code (using
 ; [SyntaxHighlighter]).
 ;
-; [MarkDown]: https://github.com/sirthias/pegdown
+; [MarkDown]: http://daringfireball.net/projects/markdown/
 ; [SyntaxHighlighter]: http://alexgorbatchev.com/SyntaxHighlighter/
 
 (defproject
@@ -17,7 +17,7 @@
 ; [enabled](#pegdown-extensions).
 ;
 ; [Clojure]: http://clojure.org
-; [pegdown]: http://daringfireball.net/projects/markdown/
+; [pegdown]: https://github.com/sirthias/pegdown
 
   :dependencies
   [[org.clojure/clojure "1.3.0"]

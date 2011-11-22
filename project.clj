@@ -23,7 +23,14 @@
   [[org.clojure/clojure "1.3.0"]
    [org.pegdown/pegdown "1.1.0"]
    ;[com.google.javascript/closure-compiler "r1592"]
-   [org.clojure/tools.cli "0.2.2-SNAPSHOT"]]
+
+; A [modified][m] `org.clojure/tools.cli` is used (for repeated options). A
+; pull request is [pending][p] for upstream inclusion.
+;
+; [m]: https://github.com/jedahu/tools.cli
+; [p]: https://github.com/clojure/tools.cli/pull/5
+
+   [me.panzoo/tools.cli "0.2.2"]]
   
   :main me.panzoo.story)
 

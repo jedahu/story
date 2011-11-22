@@ -17,6 +17,9 @@
 
      LinkRenderer LinkRenderer$Rendering]
     [org.pegdown.ast WikiLinkNode])
+
+; To run from the commandline this namespace must be compiled with a `-main`
+; method. When run from the REPL or from Leiningen `gen-class` does nothing.
   
   (:gen-class))
 
@@ -27,7 +30,8 @@
 ; identifier, and bind an output stream to `*out*` over a lexical scope.
 
 (defn each
-  "Apply f to each item of coll in order for side effects only. Returns nil."
+  "Apply f to each item of coll in order for side effects only.
+  Returns nil."
   [f coll]
   (doseq [c coll]
     (f c)))
@@ -54,8 +58,8 @@
 ; expressions that match the beginning of commented lines, SyntaxHighlighter
 ; options, a PegDownProcessor, and a modified LinkRenderer. Of these, the
 ; processor and renderer are never dynamically bound. The other variables are
-; bound once for the lifetime of the program, so with the rest of the program
-; they can also be considered constant.
+; bound once for the lifetime of the program, so for the rest of the program
+; they can be considered constant.
 ;
 ; ### Parsing variables
 
@@ -245,6 +249,7 @@
   (inline-js (slurp-resource "shCore.js"))
   (inline-brush)
   (inline-theme)
+  (inline-js (slurp-resource "outliner.0.5.0.62.js"))
   (inline-css (slurp-resource "page.css"))
   (inline-stylesheet))
 
@@ -257,6 +262,17 @@
          "SyntaxHighlighter.defaults['gutter'] = false;"
          "SyntaxHighlighter.defaults['unindent'] = false;"
          "SyntaxHighlighter.all();")))
+
+(defn outliner-setup []
+  (println "<div id=outline></div>")
+  (inline-js
+    (str "var outline = document.getElementById('outline');"
+         "outline.innerHTML = HTML5Outline(document.body).asHTML(true);"
+         "var children = outline.firstElementChild.firstElementChild.children;"
+         "outline.removeChild(outline.firstElementChild);"
+         "for (var i = 1; i < children.length; ++i) {"
+         "  outline.appendChild(children[i]);"
+         "}")))
     
 ; ## Output
 ;
@@ -275,7 +291,8 @@
 ; file's rendering is wrapped in its own `article` tags.
 
   (each (partial render-file "article") paths)
-  (syntax-highlighter-setup))
+  (syntax-highlighter-setup)
+  (outliner-setup))
 
 ; The output stream can be a file or standard output or anything
 ; `clojure.java.io/writer` can handle.
@@ -288,9 +305,9 @@
 ;
 ; Use this program from the commandline like so.
 
+;@commandline entry point
 (def usage "Usage: java -jar story.jar [options] <input-files>")
 
-;@commandline entry point
 (defn -main [& args]
   (let [[amap tail banner]
         (cli/cli args

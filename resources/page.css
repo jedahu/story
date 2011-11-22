@@ -1,16 +1,30 @@
 div.code,
 pre
-{ background-color: #f5f5ff }
-
-div.code,
-pre
-{ border: solid #e5e5ee 1px }
+{
+  background-color: #f5f5ff;
+  border: solid #e5e5ee 1px;
+}
 
 body
-{ font-family: sans-serif; }
+{
+  font-family: sans-serif;
+  font-size: 0.95em;
+  margin: 0 0 0 2em;
+  padding: 0;
+}
 
 h1, h2, h3, h4, h5, h6
-{ font-family: sans-serif }
+{
+  font-family: sans-serif;
+  color: #535388;
+}
+
+article
+{
+  margin: 0;
+  width: 35em;
+  text-align: justify;
+}
 
 article > h1
 { font-size: 2.2em }
@@ -33,29 +47,37 @@ article > section > section > section > h1
 { font-size: 1em }
 
 article > h1
-{ background-color: #9393aa }
+{
+  color: white;
+  background-color: #9393aa;
+  margin: 0;
+  padding: 0.5em 0 0.8em 0;
+  text-align: center;
+}
 
-article > h1
-{ color: white }
+div#outline
+{
+  position: fixed;
+  top: 2em;
+  left: 37.5em;
+}
 
-h1, h2, h3, h4, h5, h6
-{ color: #535388 }
+div#outline > ol
+{ font-size: 0.8em }
 
-body
-{ margin: 0 0 0 5% }
+div#outline ol
+{
+  margin-left: 0;
+  padding-left: 1em;
+  list-style-type: none;
+}
 
-article,
-article > h1
-{ margin: 0 }
+div#outline ol ol ol ol
+{
+  display: none;
+}
 
-body
-{ padding: 0 }
-
-article > h1
-{ padding: 0.5em 0 0.8em 0 }
-
-article
-{ width: 40em }
-
-article > h1
-{ text-align: center }
+div#outline a
+{
+  text-decoration: none;
+}

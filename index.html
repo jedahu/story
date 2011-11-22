@@ -2680,7 +2680,7 @@ lein uberjar
      (binding [*out* w#]
        ~@body)))
  </pre></div>
-<h2>Top level variables</h2><p>A few objects need to be accessed by a number of functions: regular expressions that match the beginning of commented lines, SyntaxHighlighter options, a PegDownProcessor, and a modified LinkRenderer. Of these, the processor and renderer are never dynamically bound. The other variables are bound once for the lifetime of the program, so for the rest of the program they can be considered constant.</p><h3>Parsing variables</h3>
+<h2>Top level variables</h2><p>A few objects need to be accessed by a number of functions: regular expressions that match the beginning of commented lines, SyntaxHighlighter options, a PegDownProcessor, and a modified LinkRenderer. The dynamic variables are bound once for each file that is processed and are not mutated at any other time.</p><h3>Parsing variables</h3>
 <div class=code><pre class='brush: clj'> 
 (def ^:dynamic *single-comment*
   "A string containing a single comment token."
@@ -2703,7 +2703,9 @@ lein uberjar
  </pre></div>
 <h3>Style variables</h3>
 <a id='language-map'></a>
-<div class=code><pre class='brush: clj'> (def languages
+<p>Including SyntaxHighlighter brush files automatically based on file suffix or the language argument to an include directive is preferrable to explicitly listing brushes on the commandline or in a program that calls this one. Comment syntax is listed here too for the same reason.</p><p>Some languages are commented out because they either do not have comments or because they only have block comments. Their dull lifeless forms remind the maintainer of this program to do something about that.</p>
+<div class=code><pre class='brush: clj'> 
+(def languages
   "A map of language names to a pairs of comment syntax and SyntaxHighlighter
   brush file names."
   {"clojure" [";" "shBrushClojure.js"]
@@ -2770,6 +2772,7 @@ lein uberjar
   nil)
  </pre></div>
 <h3>Pegdown variables</h3>
+<p>The same <a href="http://www.decodified.com/pegdown/api/org/pegdown/PegDownProcessor.html">pegdown processor</a> and <a href="http://www.decodified.com/pegdown/api/org/pegdown/LinkRenderer.html">link renderer</a> are used for each program execution.</p>
 <a id='pegdown-extensions'></a>
 <div class=code><pre class='brush: clj'> (def processor
   "A PegDownProcessor set up with the following extensions:
@@ -2806,13 +2809,13 @@ lein uberjar
       ([node url title text]
        (proxy-super render node url title text)))))
  </pre></div>
-<h3>Mutable variables</h3>
+<h3>Mutable variables</h3><p>Brushes can be added whenever a new file is processed. They must be path strings.</p>
 <div class=code><pre class='brush: clj'> 
-(def brushes (atom #{}))
+(def brushes (atom #{} :validator #(not (some (comp not string?) %))))
  </pre></div>
 <h2>Parsing</h2><p>Each line of a source file will be either code, comment, anchor, or include.</p>
 <div class=code><pre class='brush: clj'> 
-(defn- classify-line
+(defn classify-line
   "Classify a line as :code or :comment. Return a pair of the classification
   and line string, sans leading comment tokens in the case of a comment."
   [line]
@@ -2824,9 +2827,9 @@ lein uberjar
         [:comment (.substring line (count s))]
         [:code line]))))
  </pre></div>
-<p>Adjacent lines of the same classification need to be gathered together into a single string.</p>
+<p>Adjacent lines of the same classification need to be gathered together into a single string except for anchors and includes.</p>
 <div class=code><pre class='brush: clj'> 
-(defn- gather-lines- [lines]
+(defn gather-lines- [lines]
   (lazy-seq
     (when-let [classfn (first (first lines))]
       (if (#{:comment :code} classfn)
@@ -2835,7 +2838,7 @@ lein uberjar
           (cons [classfn text] (gather-lines- tail)))
         (cons (first lines) (gather-lines- (rest lines)))))))
 
-(defn- gather-lines [lines]
+(defn gather-lines [lines]
   (gather-lines- (map classify-line lines)))
  </pre></div>
 <p>The result of gathering is a list of pairs of the form <code>[&lt;classification&gt; &lt;data&gt;]</code>.</p>
@@ -2848,9 +2851,16 @@ lein uberjar
 (defn render-file [tag path &amp; [token lang]]
   (let [lang (or lang (re-find #"(?&lt;=\.)[^.]+$" path))
         token (or token (first (languages lang)))]
+ </pre></div>
+<p>SyntaxHighlighter brushes are associated with files if the language is supplied or can be worked out from the file suffix.</p>
+<div class=code><pre class='brush: clj'> 
     (when-let [b (and lang (second (languages lang)))]
-      (message path " auto-associated with brush " b)
-      (swap! brushes conj b))
+      (when-not (@brushes b)
+        (message path " associated with brush " b)
+        (swap! brushes conj b)))
+ </pre></div>
+<p>For each file, new bindings are made for comment syntax and language. The strict function <code>each</code> is used instead of <code>for</code> because otherwise the bindings would go out of scope before enclosed code was fully executed; also, it&rsquo;s prettier.</p>
+<div class=code><pre class='brush: clj'> 
     (with-open [r (io/reader path)]
       (binding [*single-comment* (or token *single-comment*)
                 *language* (or lang *language*)]
@@ -2880,15 +2890,15 @@ lein uberjar
   (let [lang (or lang (re-find #"(?&lt;=\.)[^.]+$" path))]
     (render-file "section" path token lang)))
  </pre></div>
-<h2>Look and feel</h2><p>All javascript and CSS is inlined in the output.</p>
+<h2>Look and feel</h2><p>All javascript and CSS are inlined in the output.</p>
 <div class=code><pre class='brush: clj'> 
-(defn- inline-js [s]
+(defn inline-js [s]
   (println "&lt;script&gt;" s "&lt;/script&gt;"))
 
-(defn- inline-css [s]
+(defn inline-css [s]
   (println "&lt;style&gt;" s "&lt;/style&gt;"))
  </pre></div>
-<p>The default SyntaxHighlighter brush and theme (clojure and eclipse) can be overridden on the commandline, and an additional stylesheet can be included too.</p>
+<p>SyntaxHighlighter brushes can be set and the default theme (<code>shThemeEclipse.css</code>) overridden on the commandline. An additional stylesheet can also be set.</p><p>Because lack of brush or theme will not materially affect the structure of the output page, failure to load one or more of them will not cause the program to halt, though it will be logged to standard-error.</p>
 <div class=code><pre class='brush: clj'> 
 (defn inline-brushes []
   (message "Adding the following brushes to output:")
@@ -2901,7 +2911,7 @@ lein uberjar
 
 (defn inline-stylesheet []
   (when *stylesheet*
-    (inline-css *stylesheet*)))
+    (inline-css (slurp-file|resource *stylesheet* :continue-on-failure))))
  </pre></div>
 <p>The resulting look-and-feel resources are included together.</p>
 <div class=code><pre class='brush: clj'> 
@@ -2944,7 +2954,7 @@ lein uberjar
      </pre></div>
 <h2>Output</h2><p>The output is HTML5 which is why no <code>html</code>, <code>head</code>, or <code>body</code> tags are present. The order of things in the output file is fairly normal for HTML: style and behaviour information first, followed by visible content, followed by the javascript entry-point.</p>
 <div class=code><pre class='brush: clj'> 
-(defn- render-files [paths]
+(defn render-files [paths]
   (println
     "&lt;!doctype html&gt;"
     "&lt;meta charset=utf-8&gt;")
@@ -2971,7 +2981,7 @@ lein uberjar
   (let [[amap tail banner]
         (cli/cli args
  </pre></div>
-<p>For the brush, theme, and stylesheet options the program first tries to read from the filesystem and if that fails because the file is not found the an attempt is made to read from the program&rsquo;s resources. The resources contain the standard SyntaxHighlighter brushes and themes under their normal file names including an additional <code>shBrushClojure.js</code> and <code>shThemeClojure.css</code>.</p><p>Multiple brushes can be used by repeating the <code>-b</code> or <code>--brush</code> options. Additional brushes may be added by the program as a result of file includes and file suffixes.</p>
+<p>Here is a list of the options this program can take when run from the commandline.</p>
 <div class=code><pre class='brush: clj'> 
                  ["-c" "--comment" "Comment syntax" :default ";"]
                  ["-b" "--brush" "SyntaxHighlighter brush file" :multi true]
@@ -2979,8 +2989,11 @@ lein uberjar
                  ["-l" "--language" "SyntaxHighlighter language"]
                  ["-s" "--stylesheet" "A stylesheet file to include"]
                  ["-h" "--help" "Show this help" :default false :flag true])]
+ </pre></div>
+<p>For the brush, theme, and stylesheet options the program first tries to read from the filesystem and if that fails because the file is not found then an attempt is made to read from the program&rsquo;s resources. The resources contain the standard SyntaxHighlighter brushes and themes under their normal file names including an additional <code>shBrushClojure.js</code> and <code>shThemeClojure.css</code>.</p><p>Multiple brushes can be used by repeating the <code>-b</code> or <code>--brush</code> options. Additional brushes may be added by the program as a result of file includes and file suffixes.</p>
+<div class=code><pre class='brush: clj'> 
     (if (or (not (seq tail)) (:help amap))
-      (do (println usage banner)
+      (do (println usage "\n" banner)
         (System/exit 1))
       (binding [*single-comment* (:comment amap)
                 *theme* (:theme amap)

@@ -214,7 +214,7 @@
 
 ; ## Look and feel
 ;
-; All javascript and css is inlined in the output.
+; All javascript and CSS is inlined in the output.
 
 (defn- inline-js [s]
   (println "<script>" s "</script>"))

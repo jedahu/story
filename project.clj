@@ -12,7 +12,7 @@
 
   :description "A literate programming tool."
 
-; The program is writtent in the [Clojure] language and uses the [pegdown]
+; The program is written in the [Clojure] language and uses the [pegdown]
 ; implementation of Markdown with a number of its extensions
 ; [enabled](#pegdown-extensions).
 ;

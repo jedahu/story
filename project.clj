@@ -27,6 +27,8 @@
   
   :main me.panzoo.story)
 
+; Check out the sources at https://github.com/jedahu/story
+
 ; ## Synopsis
 ;
 ; To use this program you need to know four things: the single-line comment

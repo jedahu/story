@@ -77,10 +77,9 @@
 ;
 ; A few objects need to be accessed by a number of functions: regular
 ; expressions that match the beginning of commented lines, SyntaxHighlighter
-; options, a PegDownProcessor, and a modified LinkRenderer. Of these, the
-; processor and renderer are never dynamically bound. The other variables are
-; bound once for the lifetime of the program, so for the rest of the program
-; they can be considered constant.
+; options, a PegDownProcessor, and a modified LinkRenderer. The dynamic
+; variables are bound once for each file that is processed and are not mutated
+; at any other time.
 ;
 ; ### Parsing variables
 
@@ -106,6 +105,16 @@
 ; ### Style variables
 
 ;@language map
+;
+; Including SyntaxHighlighter brush files automatically based on file suffix or
+; the language argument to an include directive is preferrable to explicitly
+; listing brushes on the commandline or in a program that calls this one.
+; Comment syntax is listed here too for the same reason.
+;
+; Some languages are commented out because they either do not have comments or
+; because they only have block comments. Their dull lifeless forms remind the
+; maintainer of this program to do something about that.
+
 (def languages
   "A map of language names to a pairs of comment syntax and SyntaxHighlighter
   brush file names."
@@ -174,6 +183,12 @@
 
 ; ### Pegdown variables
 
+; The same [pegdown processor][pp] and [link renderer][lr] are used for each
+; program execution.
+;
+; [pp]: http://www.decodified.com/pegdown/api/org/pegdown/PegDownProcessor.html
+; [lr]: http://www.decodified.com/pegdown/api/org/pegdown/LinkRenderer.html
+;
 ;@pegdown-extensions
 (def processor
   "A PegDownProcessor set up with the following extensions:
@@ -211,14 +226,17 @@
        (proxy-super render node url title text)))))
 
 ; ### Mutable variables
+;
+; Brushes can be added whenever a new file is processed. They must be path
+; strings.
 
-(def brushes (atom #{}))
+(def brushes (atom #{} :validator #(not (some (comp not string?) %))))
 
 ; ## Parsing
 ;
 ; Each line of a source file will be either code, comment, anchor, or include.
 
-(defn- classify-line
+(defn classify-line
   "Classify a line as :code or :comment. Return a pair of the classification
   and line string, sans leading comment tokens in the case of a comment."
   [line]
@@ -231,9 +249,9 @@
         [:code line]))))
 
 ; Adjacent lines of the same classification need to be gathered together into
-; a single string.
+; a single string except for anchors and includes.
 
-(defn- gather-lines- [lines]
+(defn gather-lines- [lines]
   (lazy-seq
     (when-let [classfn (first (first lines))]
       (if (#{:comment :code} classfn)
@@ -242,7 +260,7 @@
           (cons [classfn text] (gather-lines- tail)))
         (cons (first lines) (gather-lines- (rest lines)))))))
 
-(defn- gather-lines [lines]
+(defn gather-lines [lines]
   (gather-lines- (map classify-line lines)))
 
 ; The result of gathering is a list of pairs of the form
@@ -264,9 +282,20 @@
 (defn render-file [tag path & [token lang]]
   (let [lang (or lang (re-find #"(?<=\.)[^.]+$" path))
         token (or token (first (languages lang)))]
+
+; SyntaxHighlighter brushes are associated with files if the language is
+; supplied or can be worked out from the file suffix.
+
     (when-let [b (and lang (second (languages lang)))]
-      (message path " auto-associated with brush " b)
-      (swap! brushes conj b))
+      (when-not (@brushes b)
+        (message path " associated with brush " b)
+        (swap! brushes conj b)))
+
+; For each file, new bindings are made for comment syntax and language. The
+; strict function `each` is used instead of `for` because otherwise the
+; bindings would go out of scope before enclosed code was fully executed; also,
+; it's prettier.
+
     (with-open [r (io/reader path)]
       (binding [*single-comment* (or token *single-comment*)
                 *language* (or lang *language*)]
@@ -301,17 +330,21 @@
 
 ; ## Look and feel
 ;
-; All javascript and CSS is inlined in the output.
+; All javascript and CSS are inlined in the output.
 
-(defn- inline-js [s]
+(defn inline-js [s]
   (println "<script>" s "</script>"))
 
-(defn- inline-css [s]
+(defn inline-css [s]
   (println "<style>" s "</style>"))
 
-; The default SyntaxHighlighter brush and theme (clojure and eclipse) can be
-; overridden on the commandline, and an additional stylesheet can be included
-; too.
+; SyntaxHighlighter brushes can be set and the default theme
+; (`shThemeEclipse.css`) overridden on the commandline. An additional
+; stylesheet can also be set.
+;
+; Because lack of brush or theme will not materially affect the structure of
+; the output page, failure to load one or more of them will not cause the
+; program to halt, though it will be logged to standard-error.
 
 (defn inline-brushes []
   (message "Adding the following brushes to output:")
@@ -324,7 +357,7 @@
 
 (defn inline-stylesheet []
   (when *stylesheet*
-    (inline-css *stylesheet*)))
+    (inline-css (slurp-file|resource *stylesheet* :continue-on-failure))))
 
 ; The resulting look-and-feel resources are included together.
 
@@ -373,7 +406,7 @@
 ; style and behaviour information first, followed by visible content, followed
 ; by the javascript entry-point.
 
-(defn- render-files [paths]
+(defn render-files [paths]
   (println
     "<!doctype html>"
     "<meta charset=utf-8>")
@@ -405,8 +438,18 @@
   (let [[amap tail banner]
         (cli/cli args
 
+; Here is a list of the options this program can take when run from the
+; commandline.
+
+                 ["-c" "--comment" "Comment syntax" :default ";"]
+                 ["-b" "--brush" "SyntaxHighlighter brush file" :multi true]
+                 ["-t" "--theme" "SyntaxHighlighter theme file"]
+                 ["-l" "--language" "SyntaxHighlighter language"]
+                 ["-s" "--stylesheet" "A stylesheet file to include"]
+                 ["-h" "--help" "Show this help" :default false :flag true])]
+
 ; For the brush, theme, and stylesheet options the program first tries to read
-; from the filesystem and if that fails because the file is not found the
+; from the filesystem and if that fails because the file is not found then
 ; an attempt is made to read from the program's resources. The resources
 ; contain the standard SyntaxHighlighter brushes and themes under their normal
 ; file names including an additional `shBrushClojure.js` and
@@ -416,14 +459,8 @@
 ; Additional brushes may be added by the program as a result of file includes
 ; and file suffixes.
 
-                 ["-c" "--comment" "Comment syntax" :default ";"]
-                 ["-b" "--brush" "SyntaxHighlighter brush file" :multi true]
-                 ["-t" "--theme" "SyntaxHighlighter theme file"]
-                 ["-l" "--language" "SyntaxHighlighter language"]
-                 ["-s" "--stylesheet" "A stylesheet file to include"]
-                 ["-h" "--help" "Show this help" :default false :flag true])]
     (if (or (not (seq tail)) (:help amap))
-      (do (println usage banner)
+      (do (println usage "\n" banner)
         (System/exit 1))
       (binding [*single-comment* (:comment amap)
                 *theme* (:theme amap)

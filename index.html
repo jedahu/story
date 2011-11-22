@@ -2577,7 +2577,7 @@ div#outline a
 <h1>A programming story</h1><p>This is the story of a small program that parses source code. It converts comments into HTML (via <a href="http://daringfireball.net/projects/markdown/">Markdown</a>) and nicely highlights code (using <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a>).</p>
 <div class=code><pre class='brush: clj'> 
 (defproject
-  me.panzoo/story "0.0.1-SNAPSHOT"
+  me.panzoo/story "0.0.1"
 
   :description "A literate programming tool."
  </pre></div>
@@ -2587,7 +2587,10 @@ div#outline a
   [[org.clojure/clojure "1.3.0"]
    [org.pegdown/pegdown "1.1.0"]
    ;[com.google.javascript/closure-compiler "r1592"]
-   [org.clojure/tools.cli "0.2.2-SNAPSHOT"]]
+ </pre></div>
+<p>A <a href="https://github.com/jedahu/tools.cli">modified</a> <code>org.clojure/tools.cli</code> is used (for repeated options). A pull request is <a href="https://github.com/clojure/tools.cli/pull/5">pending</a> for upstream inclusion.</p>
+<div class=code><pre class='brush: clj'> 
+   [me.panzoo/tools.cli "0.2.2"]]
   
   :main me.panzoo.story)
  </pre></div>
@@ -2851,27 +2854,45 @@ lein uberjar
 <div class=code><pre class='brush: clj'> 
 (defmulti html&lt;- first)
  </pre></div>
-<p>Lines of source code are read lazily by <code>line-seq</code> and gathered lazily by <code>gather-lines</code>, Along with printing each chunk of comment or code to an output stream, this ensures that the maximum memory used by this program will be determined by the largest comment or code chunk and not the total size of the source file.</p>
-<div class=code><pre class='brush: clj'> 
-(defn render-file [tag path &amp; [token lang]]
-  (let [lang (or lang (re-find #"(?&lt;=\.)[^.]+$" path))
-        token (or token (first (languages lang)))]
- </pre></div>
 <p>SyntaxHighlighter brushes are associated with files if the language is supplied or can be worked out from the file suffix.</p>
 <div class=code><pre class='brush: clj'> 
-    (when-let [b (and lang (second (languages lang)))]
-      (when-not (@*brushes* b)
-        (message path " associated with brush " b)
-        (swap! *brushes* conj b)))
+(defn maybe-associate-brush [path lang]
+  (when-let [b (and lang (second (languages lang)))]
+    (when-not (@*brushes* b)
+      (message path " associated with brush " b)
+      (swap! *brushes* conj b))))
  </pre></div>
-<p>For each file, new bindings are made for comment syntax and language. The strict function <code>each</code> is used instead of <code>for</code> because otherwise the bindings would go out of scope before enclosed code was fully executed; also, it&rsquo;s prettier.</p>
+<p>The output of each file is wrapped in <code>article</code> or <code>section</code> tags. Article tags for top-level files and section tags for included ones.</p>
 <div class=code><pre class='brush: clj'> 
-    (with-open [r (io/reader path)]
-      (binding [*single-comment* (or token *single-comment*)
-                *language* (or lang *language*)]
-        (println (str "&lt;" tag "&gt;"))
-        (each html&lt;- (gather-lines (line-seq r)))
-        (println (str "&lt;/" tag "&gt;"))))))
+(defmacro wrap-in-tags [tag &amp; body]
+  `(do
+     (println (str "&lt;" ~tag "&gt;"))
+     ~@body
+     (println (str "&lt;/" ~tag "&gt;"))))
+
+(defn render-file [tag path &amp; [token lang]]
+ </pre></div>
+<p>For each file, new bindings are made for comment syntax and language. If the language or comment syntax (<code>token</code>) are not supplied, they are guessed from the <code>path</code> suffix, and if that fails they are set to the values they have in the enclsing dynamic scope (i.e., from the commandline or the including file).</p>
+<div class=code><pre class='brush: clj'> 
+  (binding [*language* (or lang
+                           (re-find #"(?&lt;=\.)[^.]+$" path)
+                           *language*)
+            *single-comment* (or token
+                                 (first (languages *language*))
+                                 *single-comment*)]
+    (wrap-in-tags tag
+      (if (#{"markdown" "md"} *language*)
+ </pre></div>
+<p>A markdown file is a special case. It is treated as a single comment block.</p>
+<div class=code><pre class='brush: clj'> 
+        (html&lt;- [:comment (slurp path)])
+        (do
+          (maybe-associate-brush path *language*)
+          (with-open [r (io/reader path)]
+ </pre></div>
+<p>Lines of source code are read lazily by <code>line-seq</code> and gathered lazily by <code>gather-lines</code>, Along with printing each chunk of comment or code to an output stream, this ensures that the maximum memory used by this program will be determined by the largest comment or code chunk and not the total size of the source file.</p>
+<div class=code><pre class='brush: clj'> 
+            (each html&lt;- (gather-lines (line-seq r)))))))))
  </pre></div>
 <p>Code chunks are wrapped in a <code>pre</code> with the correct incantation for SyntaxHighlighter in its <code>class</code> attribute; comments are run through the Markdown processor; anchors become hrefless HTML anchors; and includes wrap the result of parsing and rendering the file they point to in <code>section</code> tags.</p>
 <div class=code><pre class='brush: clj'> 

@@ -274,10 +274,52 @@
 
 ; ## Rendering
 ;
-; The method that transforms each classified
-; chunk into HTML, dispatches on the classification.
+; The method that transforms each classified chunk into HTML, dispatches on the
+; classification.
 
 (defmulti html<- first)
+
+; SyntaxHighlighter brushes are associated with files if the language is
+; supplied or can be worked out from the file suffix.
+
+(defn maybe-associate-brush [path lang]
+  (when-let [b (and lang (second (languages lang)))]
+    (when-not (@*brushes* b)
+      (message path " associated with brush " b)
+      (swap! *brushes* conj b))))
+
+; The output of each file is wrapped in `article` or `section` tags. Article
+; tags for top-level files and section tags for included ones.
+
+(defmacro wrap-in-tags [tag & body]
+  `(do
+     (println (str "<" ~tag ">"))
+     ~@body
+     (println (str "</" ~tag ">"))))
+
+(defn render-file [tag path & [token lang]]
+
+; For each file, new bindings are made for comment syntax and language. If the
+; language or comment syntax (`token`) are not supplied, they are guessed
+; from the `path` suffix, and if that fails they are set to the values they
+; have in the enclsing dynamic scope (i.e., from the commandline or the
+; including file).
+
+  (binding [*language* (or lang
+                           (re-find #"(?<=\.)[^.]+$" path)
+                           *language*)
+            *single-comment* (or token
+                                 (first (languages *language*))
+                                 *single-comment*)]
+    (wrap-in-tags tag
+      (if (#{"markdown" "md"} *language*)
+
+; A markdown file is a special case. It is treated as a single comment block.
+
+        (html<- [:comment (slurp path)])
+        (do
+          (maybe-associate-brush path *language*)
+          (with-open [r (io/reader path)]
 
 ; Lines of source code are read lazily by `line-seq` and gathered lazily by
 ; `gather-lines`, Along with printing each chunk of comment or code to an
@@ -285,29 +327,7 @@
 ; be determined by the largest comment or code chunk and not the total size of
 ; the source file.
 
-(defn render-file [tag path & [token lang]]
-  (let [lang (or lang (re-find #"(?<=\.)[^.]+$" path))
-        token (or token (first (languages lang)))]
-
-; SyntaxHighlighter brushes are associated with files if the language is
-; supplied or can be worked out from the file suffix.
-
-    (when-let [b (and lang (second (languages lang)))]
-      (when-not (@*brushes* b)
-        (message path " associated with brush " b)
-        (swap! *brushes* conj b)))
-
-; For each file, new bindings are made for comment syntax and language. The
-; strict function `each` is used instead of `for` because otherwise the
-; bindings would go out of scope before enclosed code was fully executed; also,
-; it's prettier.
-
-    (with-open [r (io/reader path)]
-      (binding [*single-comment* (or token *single-comment*)
-                *language* (or lang *language*)]
-        (println (str "<" tag ">"))
-        (each html<- (gather-lines (line-seq r)))
-        (println (str "</" tag ">"))))))
+            (each html<- (gather-lines (line-seq r)))))))))
 
 ; Code chunks are wrapped in a `pre` with the correct incantation for
 ; SyntaxHighlighter in its `class` attribute; comments are run through the

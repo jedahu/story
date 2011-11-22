@@ -713,7 +713,7 @@ var sh = {
 		/** Gets or sets light mode. Equavalent to turning off gutter and toolbar. */
 		'light' : false,
 
-    'unindent' : true,
+		'unindent' : true,
 		
 		'html-script' : false
 	},
@@ -1325,7 +1325,7 @@ function findBrush(alias, showAlert)
 	
 	result = sh.brushes[brushes[alias]];
 
-	if (result == null && showAlert != false)
+	if (result == null && showAlert)
 		alert(sh.config.strings.noBrush + alias);
 	
 	return result;
@@ -2228,7 +2228,7 @@ sh.Highlighter.prototype = {
 
 		// unindent code by the common indentation
 		if (this.getParam('unindent'))
-      code = unindent(code);
+			code = unindent(code);
 
 		if (gutter)
 			lineNumbers = this.figureOutLineNumbers(code);
@@ -2359,6 +2359,642 @@ return sh;
 // CommonJS
 typeof(exports) != 'undefined' ? exports.SyntaxHighlighter = SyntaxHighlighter : null;
  </script>
+<style> .syntaxhighlighter {
+  background-color: transparent !important;
+}
+.syntaxhighlighter .line.alt1 {
+  background-color: transparent !important;
+}
+.syntaxhighlighter .line.alt2 {
+  background-color: transparent !important;
+}
+.syntaxhighlighter .line.highlighted.alt1, .syntaxhighlighter .line.highlighted.alt2 {
+  background-color: #c3defe !important;
+}
+.syntaxhighlighter .line.highlighted.number {
+  color: white !important;
+}
+.syntaxhighlighter table caption {
+  color: black !important;
+}
+.syntaxhighlighter .gutter {
+  color: #787878 !important;
+}
+.syntaxhighlighter .gutter .line {
+  border-right: 3px solid #d4d0c8 !important;
+}
+.syntaxhighlighter .gutter .line.highlighted {
+  background-color: #d4d0c8 !important;
+  color: white !important;
+}
+.syntaxhighlighter.printing .line .content {
+  border: none !important;
+}
+.syntaxhighlighter.collapsed {
+  overflow: visible !important;
+}
+.syntaxhighlighter.collapsed .toolbar {
+  color: #3f5fbf !important;
+  background: white !important;
+  border: 1px solid #d4d0c8 !important;
+}
+.syntaxhighlighter.collapsed .toolbar a {
+  color: #3f5fbf !important;
+}
+.syntaxhighlighter.collapsed .toolbar a:hover {
+  color: #aa7700 !important;
+}
+.syntaxhighlighter .toolbar {
+  color: #a0a0a0 !important;
+  background: #d4d0c8 !important;
+  border: none !important;
+}
+.syntaxhighlighter .toolbar a {
+  color: #a0a0a0 !important;
+}
+.syntaxhighlighter .toolbar a:hover {
+  color: red !important;
+}
+.syntaxhighlighter .plain, .syntaxhighlighter .plain a {
+  color: black !important;
+}
+.syntaxhighlighter .comments, .syntaxhighlighter .comments a {
+  color: #3f5fbf !important;
+}
+.syntaxhighlighter .string, .syntaxhighlighter .string a {
+  color: #2a00ff !important;
+}
+.syntaxhighlighter .keyword {
+  color: #7f0055 !important;
+}
+.syntaxhighlighter .preprocessor {
+  color: #646464 !important;
+}
+.syntaxhighlighter .variable {
+  color: #aa7700 !important;
+}
+.syntaxhighlighter .value {
+  color: #009900 !important;
+}
+.syntaxhighlighter .functions {
+  color: #ff1493 !important;
+}
+.syntaxhighlighter .constants {
+  color: #0066cc !important;
+}
+.syntaxhighlighter .script {
+  font-weight: bold !important;
+  color: #7f0055 !important;
+  background-color: none !important;
+}
+.syntaxhighlighter .color1, .syntaxhighlighter .color1 a {
+  color: gray !important;
+}
+.syntaxhighlighter .color2, .syntaxhighlighter .color2 a {
+  color: #ff1493 !important;
+}
+.syntaxhighlighter .color3, .syntaxhighlighter .color3 a {
+  color: red !important;
+}
+
+.syntaxhighlighter .keyword {
+  font-weight: bold !important;
+}
+.syntaxhighlighter .xml .keyword {
+  color: #3f7f7f !important;
+  font-weight: normal !important;
+}
+.syntaxhighlighter .xml .color1, .syntaxhighlighter .xml .color1 a {
+  color: #7f007f !important;
+}
+.syntaxhighlighter .xml .string {
+  font-style: italic !important;
+  color: #2a00ff !important;
+}
+ </style>
+<script> /**
+ * This code contains an implementation of HTML5 outlining algorithm, as described by WHATWG at [1]
+ *
+ * The copyright notice at [2] says:
+ *		(c) Copyright 2004-2009 Apple Computer, Inc., Mozilla Foundation, and Opera Software ASA.
+ *		You are granted a license to use, reproduce and create derivative works of this document.
+ *
+ * [1] http://www.whatwg.org/specs/web-apps/current-work/multipage/sections.html#outlines
+ * [2] http://www.whatwg.org/specs/web-apps/current-work/multipage/index.html
+ */
+(function(){var i=function(a){this.sections=[];this.startingNode=a};i.prototype={heading:false,append:function(a){a.container=this;this.sections.push(a)},asHTML:function(a){var b=u(this.heading);if(a)b='<a href="#'+v(this.startingNode)+'">'+b+"</a>";return b+q(this.sections,a)}};var q=function(a,b){for(var f="",c=0;c<a.length;c++)f+="<li>"+a[c].asHTML(b)+"</li>";return f==""?f:"<ol>"+f+"</ol>"},r=function(a){a=a.heading;return h(a)?j(a):1},u=function(a){if(h(a)){if(k(a)=="HGROUP")a=a.getElementsByTagName("h"+
+-j(a))[0];return a.textContent||a.innerText||"<i>No text content inside "+a.nodeName+"</i>"}return""+a},v=function(a){var b=a.getAttribute("id");if(b)return b;do b="h5o-"+ ++s;while(t.getElementById(b));a.setAttribute("id",b);return b},e,d,g,s,t,w=function(a,b,f){var c=a;a:for(;c;){b(c);if(c.firstChild){c=c.firstChild;continue a}for(;c;){f(c);if(c.nextSibling){c=c.nextSibling;continue a}c=c==a?null:c.parentNode}}},x=function(a){if(!h(o(g)))if(l(a)||m(a)){e!=null&&g.push(e);e=a;d=new i(a);e.outline=
+{sections:[d],startingNode:a,asHTML:function(c){return q(this.sections,c)}}}else if(e!=null)if(h(a)){if(d.heading)if(j(a)>=r(n(e.outline))){var b=new i(a);e.outline.sections.push(b);d=b;d.heading=a}else{b=false;var f=d;do{if(j(a)<r(f)){b=new i(a);f.append(b);d=b;d.heading=a;b=true}f=f.container}while(!b)}else d.heading=a;g.push(a)}},y=function(a){var b=o(g);if(h(b))b==a&&g.pop();else{if((l(a)||m(a))&&!d.heading)d.heading="<i>Untitled "+k(a)+"</i>";if(l(a)&&g.length>0){e=g.pop();d=n(e.outline);for(b=
+0;b<a.outline.sections.length;b++)d.append(a.outline.sections[b])}else if(m(a)&&g.length>0){e=g.pop();for(d=n(e.outline);d.sections.length>0;)d=n(d)}else if(l(a)||m(a))d=e.outline.sections[0]}},k=function(a){return a.tagName.toUpperCase()},p=function(a){return function(b){return z(b)&&(new RegExp(a,"i")).test(k(b))}},m=p("^BLOCKQUOTE|BODY|DETAILS|FIELDSET|FIGURE|TD$"),l=p("^ARTICLE|ASIDE|NAV|SECTION$"),h=p("^H[1-6]|HGROUP$"),z=function(a){return a&&a.tagName},j=function(a){var b=k(a);if(b=="HGROUP")for(b=
+1;b<=6;b++){if(a.getElementsByTagName("H"+b).length>0)return-b}else return-parseInt(b.substr(1))},n=function(a){return o(a.sections)},o=function(a){return a[a.length-1]};HTML5Outline=function(a){s=0;t=a.ownerDocument||window.document;d=e=null;g=[];w(a,x,y);return e!=null?e.outline:null}})();
+ </script>
+<style> div.code,
+pre
+{
+  background-color: #f5f5ff;
+  border: solid #e5e5ee 1px;
+  text-align: left;
+}
+
+body
+{
+  font-family: sans-serif;
+  font-size: 0.95em;
+  margin: 0 0 0 2em;
+  padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6
+{
+  font-family: sans-serif;
+  color: #535388;
+}
+
+article
+{
+  margin: 0;
+  width: 38em;
+  text-align: justify;
+}
+
+article > h1
+{ font-size: 2.2em }
+
+article > h2,
+article > section > h1
+{ font-size: 1.6em }
+
+article > h3,
+article > section > h2,
+article > section > section > h1
+{ font-size: 1.3em }
+
+article > h4,
+article h5,
+article h6,
+article > section > h3,
+article > section > section > h2,
+article > section > section > section > h1
+{ font-size: 1em }
+
+article > h1
+{
+  color: white;
+  background-color: #9393aa;
+  margin: 0;
+  padding: 0.5em 0 0.8em 0;
+  text-align: center;
+}
+
+div#outline
+{
+  position: fixed;
+  top: 2em;
+  left: 41em;
+}
+
+div#outline > ol
+{ font-size: 0.8em }
+
+div#outline ol
+{
+  margin-left: 0;
+  padding-left: 1em;
+  list-style-type: none;
+}
+
+div#outline ol ol ol ol
+{
+  display: none;
+}
+
+div#outline a
+{
+  text-decoration: none;
+}
+ </style>
+<article>
+<h1>A programming story</h1><p>This is the story of a small program that parses source code. It converts comments into HTML (via <a href="http://daringfireball.net/projects/markdown/">Markdown</a>) and nicely highlights code (using <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a>).</p>
+<div class=code><pre class='brush: clj'> 
+(defproject
+  me.panzoo/story "0.0.1-SNAPSHOT"
+
+  :description "A literate programming tool."
+ </pre></div>
+<p>The program is written in the <a href="http://clojure.org">Clojure</a> language and uses the <a href="https://github.com/sirthias/pegdown">pegdown</a> implementation of Markdown with a number of its extensions <a href="#pegdown-extensions">enabled</a>.</p>
+<div class=code><pre class='brush: clj'> 
+  :dependencies
+  [[org.clojure/clojure "1.3.0"]
+   [org.pegdown/pegdown "1.1.0"]
+   ;[com.google.javascript/closure-compiler "r1592"]
+   [org.clojure/tools.cli "0.2.1"]]
+  
+  :main me.panzoo.story)
+ </pre></div>
+<p>Check out the sources at <a href="https://github.com/jedahu/story">https://github.com/jedahu/story</a></p>
+<h2>Synopsis</h2><p>To use this program you need to know four things: the single-line comment syntax of your source-code, Markdown, the story syntax for anchors, and the story syntax for includes.</p><p>Comment blocks that are flush with the left margin are parsed and rendered using Markdown. Anchors are comment lines whose content is &lsquo;<code>@&lt;anchor-id&gt;</code>&rsquo;. To include another source file add a comment line whose content is &lsquo;<code>%include &lt;file-path&gt;</code>&rsquo;.</p><p>By default this program is set up to process a Lisp like language with single semi-colon comment tokens. A small source example with anchors, includes, and wiki links might look like this:</p>
+<div class=code><pre class='brush: clojure'>
+; # My awesome program
+;
+; Introductory paragraph. Fast forward to the [[code]].
+;
+; Blah blah blah.
+
+;@code
+(defn hello []
+  (println "Hello world!"))
+
+; See the code [again!](#code)
+
+;%include fibonacci.clj
+;%include fibonacci.js // javascript
+</pre></div><p>As you can see, files written in different languages can be included. In this example <code>fibonacci.js</code> is followed by the comment syntax and language name to use with SyntaxHighlighter. For a number of languages this information can be obtained from the file extension and the appropriate brush file pulled in automatically; those languages are listed in the <a href="#language-map">language map</a>.</p><h3>Build instructions</h3><p>To build <code>story.jar</code> make sure <a href="https://github.com/technomancy/leiningen">Leiningen</a> is installed and run the following commands in the story project directory:</p>
+<pre><code>lein deps
+lein uberjar
+</code></pre><p>If all goes well a file named something like <code>story-x.x.x-standalone.jar</code> will have magically appeared in the project directory. Rename it to <code>story.jar</code> if you like.</p><h3>Command line usage</h3>
+<pre><code>java -jar story.jar input-files &gt; output
+</code></pre><p>For more detail run the program with the <code>--help</code> option or have a look at the <a href="#commandline">commandline</a> section.</p><p>This HTML document (assuming you are not reading the source file) was created by the command: <code>java -jar story.jar project.clj &gt; index.html</code>.</p>
+<section>
+<h1>The code</h1><p>The usual stuff comes first. This code needs to read and write to files, manipulate strings, and parse Markdown.</p>
+<div class=code><pre class='brush: clj'> 
+(ns me.panzoo.story
+  (:refer-clojure :exclude [comment])
+  (:require
+    [clojure.java.io :as io]
+    [clojure.string :as string]
+    [clojure.tools.cli :as cli])
+  (:import
+    [org.pegdown PegDownProcessor Extensions
+ </pre></div>
+<p>Internal links (to element ids) are nice to have. These imports will be used to create a modified LinkRenderer.</p>
+<div class=code><pre class='brush: clj'> 
+     LinkRenderer LinkRenderer$Rendering]
+    [org.pegdown.ast WikiLinkNode])
+ </pre></div>
+<p>To run from the commandline this namespace must be compiled with a <code>-main</code> method. When run from the REPL or from Leiningen <code>gen-class</code> does nothing.</p>
+<div class=code><pre class='brush: clj'>   
+  (:gen-class))
+ </pre></div>
+<h2>Utilities</h2><p>A few utility functions to make it easier to print messages to the console, iterate side-effects through a collection, access resources, encode a string for use as an id or fragment identifier, and bind an output stream to <code>*out*</code> over a lexical scope.</p>
+<div class=code><pre class='brush: clj'> 
+(defn message [&amp; s]
+  (binding [*out* (io/writer System/err)]
+    (println (apply str s))))
+
+(defn each
+  "Apply f to each item of coll in order for side effects only.
+  Returns nil."
+  [f coll]
+  (doseq [c coll]
+    (f c)))
+
+(defn slurp-resource
+  "Get the complete contents of a Java resource."
+  [resource-name &amp; continue-on-failure?]
+  (try
+    (-&gt; (.getContextClassLoader (Thread/currentThread))
+      (.getResourceAsStream resource-name)
+      (java.io.InputStreamReader.)
+      (slurp))
+    (catch Exception e
+      (message "failed to read resource " resource-name)
+      (if continue-on-failure?
+        (message "    continuing anyway...")
+        (do (message "    aborting...")
+          (throw e))))))
+
+(defn slurp-file|resource
+  "Get the contents of the file at path, or failing that, the contents of a
+  Java resource."
+  [path &amp; continue-on-failure?]
+  (try (slurp path)
+    (catch java.io.FileNotFoundException _
+      (message path " not found; reading as a resource instead")
+      (slurp-resource path continue-on-failure?))))
+
+(defn encode-anchor [s]
+  (java.net.URLEncoder/encode (.replace s " " "-") "UTF-8"))
+
+(defmacro with-out-stream [out &amp; body]
+  `(with-open [w# (io/writer ~out)]
+     (binding [*out* w#]
+       ~@body)))
+ </pre></div>
+<h2>Top level variables</h2><p>A few objects need to be accessed by a number of functions: regular expressions that match the beginning of commented lines, SyntaxHighlighter options, a PegDownProcessor, and a modified LinkRenderer. Of these, the processor and renderer are never dynamically bound. The other variables are bound once for the lifetime of the program, so for the rest of the program they can be considered constant.</p><h3>Parsing variables</h3>
+<div class=code><pre class='brush: clj'> 
+(def ^:dynamic *single-comment*
+  "A string containing a single comment token."
+  ";")
+
+(defn comment
+  "A regular expression matching the beginning of a commented line."
+  []
+  (re-pattern (str "^\\Q" *single-comment* "\\E ?")))
+
+(defn anchor
+  "A regular expression matching the beginning of an anchor line."
+  []
+  (re-pattern (str (comment) "@ *")))
+
+(defn include
+  "A regular expression matching the beginning of an include line."
+  []
+  (re-pattern (str (comment) "%include +")))
+ </pre></div>
+<h3>Style variables</h3>
+<a id='language-map'></a>
+<div class=code><pre class='brush: clj'> (def languages
+  "A map of language names to a pairs of comment syntax and SyntaxHighlighter
+  brush file names."
+  {"clojure" [";" "shBrushClojure.js"]
+   "clj" [";" "shBrushClojure.js"]
+   "cljs" [";" "shBrushClojure.js"]
+   "applescript" ["--" "shBrushAppleScript.js"]
+   "actionscript3" ["//" "shBrushAS3.js"]
+   "as3" ["//" "shBrushAS3.js"]
+   "bash" ["#" "shBrushBash.js"]
+   "shell" ["#" "shBrushBash.js"]
+   "sh" ["#" "shBrushBash.js"]
+   ;"coldfusion" "shBrushColdFusion.js"
+   "cpp" ["//" "shBrushCpp.js"]
+   "c++" ["//" "shBrushCpp.js"]
+   "cxx" ["//" "shBrushCpp.js"]
+   "c" ["//" "shBrushCpp.js"]
+   "c#" ["//" "shBrushCSharp.js"]
+   "c-sharp" ["//" "shBrushCSharp.js"]
+   "csharp" ["//" "shBrushCSharp.js"]
+   "delphi" ["//" "shBrushDelphi.js"]
+   "pascal" ["//" "shBrushDelphi.js"]
+   ;"diff" "shBrushDiff.js"
+   ;"patch" "shBrushDiff.js"
+   "erlang" ["%" "shBrushErlang.js"]
+   "erl" ["%" "shBrushErlang.js"]
+   "groovy" ["//" "shBrushGroovy.js"]
+   "java" ["//" "shBrushJava.js"]
+   "javafx" ["//" "shBrushJavaFX.js"]
+   "jfx" ["//" "shBrushJavaFX.js"]
+   "javascript" ["//" "shBrushJScript.js"]
+   "js" ["//" "shBrushJScript.js"]
+   "perl" ["#" "shBrushPerl.js"]
+   "pl" ["#" "shBrushPerl.js"]
+   "php" ["#" "shBrushPhp.js"]
+   ;"text" "shBrushPlain.js"
+   ;"txt" "shBrushPlain.js"
+   ;"plain" "shBrushPlain.js"
+   "python" ["#" "shBrushPython.js"]
+   "py" ["#" "shBrushPython.js"]
+   "ruby" ["#" "shBrushRuby.js"]
+   "rb" ["#" "shBrushRuby.js"]
+   "sass" ["//" "shBrushSass.js"]
+   "scss" ["//" "shBrushSass.js"]
+   "scala" ["//" "shBrushScala.js"]
+   "sql" ["--" "shBrushSql.js"]
+   "vb" ["'" "shBrushVb.js"]
+   "vbnet" ["'" "shBrushVb.js"]
+   ;"xml" "shBrushXml.js"
+   ;"xhtml" "shBrushXml.js"
+   ;"xslt" "shBrushXml.js"
+   ;"html" "shBrushXml.js"
+   })
+
+(def ^:dynamic *theme*
+  "Path to a SyntaxHighlighter theme file."
+  "shThemeEclipse.css")
+
+(def ^:dynamic *language*
+  "A language string for use with SyntaxHighlighter."
+  "clojure")
+
+(def ^:dynamic *stylesheet*
+  "Path to a stylesheet file."
+  nil)
+ </pre></div>
+<h3>Pegdown variables</h3>
+<a id='pegdown-extensions'></a>
+<div class=code><pre class='brush: clj'> (def processor
+  "A PegDownProcessor set up with the following extensions:
+  AUTOLINKS
+  SMARTYPANTS
+  FENCED_CODE_BLOCKS
+  DEFINITIONS
+  WIKILINKS"
+  (PegDownProcessor. (bit-or
+                       (. Extensions AUTOLINKS)
+                       (. Extensions SMARTYPANTS)
+                       (. Extensions FENCED_CODE_BLOCKS)
+                       (. Extensions DEFINITIONS)
+                       (. Extensions WIKILINKS))))
+
+(def link-renderer
+  "A pegdown LinkRenderer that renders wiki links as links to internal
+  document fragments rather than external HTML pages."
+  (proxy [LinkRenderer] []
+    (render
+      ([node]
+       (if (instance? WikiLinkNode node)
+         (try
+           (LinkRenderer$Rendering.
+             (str
+               "#"
+               (encode-anchor (.. node (getText))))
+             (.getText node))
+           (catch java.io.UnsupportedEncodingException _
+             (throw (IllegalStateException.))))
+         (proxy-super render node)))
+      ([node text]
+       (proxy-super render node text))
+      ([node url title text]
+       (proxy-super render node url title text)))))
+ </pre></div>
+<h3>Mutable variables</h3>
+<div class=code><pre class='brush: clj'> 
+(def brushes (atom #{}))
+ </pre></div>
+<h2>Parsing</h2><p>Each line of a source file will be either code, comment, anchor, or include.</p>
+<div class=code><pre class='brush: clj'> 
+(defn- classify-line
+  "Classify a line as :code or :comment. Return a pair of the classification
+  and line string, sans leading comment tokens in the case of a comment."
+  [line]
+  (if-let [s (re-find (include) line)]
+    [:include (string/split (.substring line (count s)) #"\s+")]
+    (if-let [s (re-find (anchor) line)]
+      [:anchor (.substring line (count s))]
+      (if-let [s (re-find (comment) line)]
+        [:comment (.substring line (count s))]
+        [:code line]))))
+ </pre></div>
+<p>Adjacent lines of the same classification need to be gathered together into a single string.</p>
+<div class=code><pre class='brush: clj'> 
+(defn- gather-lines- [lines]
+  (lazy-seq
+    (when-let [classfn (first (first lines))]
+      (if (#{:comment :code} classfn)
+        (let [[same tail] (split-with #(= classfn (first %)) lines)
+              text (string/join "\n" (map second same))]
+          (cons [classfn text] (gather-lines- tail)))
+        (cons (first lines) (gather-lines- (rest lines)))))))
+
+(defn- gather-lines [lines]
+  (gather-lines- (map classify-line lines)))
+ </pre></div>
+<p>The result of gathering is a list of pairs of the form <code>[&lt;classification&gt; &lt;data&gt;]</code>.</p>
+<h2>Rendering</h2><p>The method that transforms each classified chunk into HTML, dispatches on the classification.</p>
+<div class=code><pre class='brush: clj'> 
+(defmulti html&lt;- first)
+ </pre></div>
+<p>Lines of source code are read lazily by <code>line-seq</code> and gathered lazily by <code>gather-lines</code>, Along with printing each chunk of comment or code to an output stream, this ensures that the maximum memory used by this program will be determined by the largest comment or code chunk and not the total size of the source file.</p>
+<div class=code><pre class='brush: clj'> 
+(defn render-file [tag path &amp; [token lang]]
+  (let [lang (or lang (re-find #"(?&lt;=\.)[^.]+$" path))
+        token (or token (first (languages lang)))]
+    (when-let [b (and lang (second (languages lang)))]
+      (message path " auto-associated with brush " b)
+      (swap! brushes conj b))
+    (with-open [r (io/reader path)]
+      (binding [*single-comment* (or token *single-comment*)
+                *language* (or lang *language*)]
+        (println (str "&lt;" tag "&gt;"))
+        (each html&lt;- (gather-lines (line-seq r)))
+        (println (str "&lt;/" tag "&gt;"))))))
+ </pre></div>
+<p>Code chunks are wrapped in a <code>pre</code> with the correct incantation for SyntaxHighlighter in its <code>class</code> attribute; comments are run through the Markdown processor; anchors become hrefless HTML anchors; and includes wrap the result of parsing and rendering the file they point to in <code>section</code> tags.</p>
+<div class=code><pre class='brush: clj'> 
+(defmethod html&lt;- :code [[_ text]]
+  (when-not (string/blank? text)
+    (println (str "&lt;div class=code&gt;&lt;pre class='brush: " *language* "'&gt;")
+             (string/escape
+               text
+               {\&lt; "&amp;lt;"
+                \&gt; "&amp;gt;"
+                \&amp; "&amp;amp;"})
+             "&lt;/pre&gt;&lt;/div&gt;")))
+
+(defmethod html&lt;- :comment [[_ text]]
+  (println (.markdownToHtml processor text link-renderer)))
+
+(defmethod html&lt;- :anchor [[_ text]]
+  (println (str "&lt;a id='" (encode-anchor text) "'&gt;&lt;/a&gt;")))
+
+(defmethod html&lt;- :include [[_ [path &amp; [token lang]] :as args]]
+  (let [lang (or lang (re-find #"(?&lt;=\.)[^.]+$" path))]
+    (render-file "section" path token lang)))
+ </pre></div>
+<h2>Look and feel</h2><p>All javascript and CSS is inlined in the output.</p>
+<div class=code><pre class='brush: clj'> 
+(defn- inline-js [s]
+  (println "&lt;script&gt;" s "&lt;/script&gt;"))
+
+(defn- inline-css [s]
+  (println "&lt;style&gt;" s "&lt;/style&gt;"))
+ </pre></div>
+<p>The default SyntaxHighlighter brush and theme (clojure and eclipse) can be overridden on the commandline, and an additional stylesheet can be included too.</p>
+<div class=code><pre class='brush: clj'> 
+(defn inline-brushes []
+  (message "Adding the following brushes to output:")
+  (each (partial message "    ") @brushes)
+  (each (comp inline-js #(slurp-file|resource % :continue-on-failure))
+        @brushes))
+
+(defn inline-theme []
+  (inline-css (slurp-file|resource *theme* :continue-on-faliure)))
+
+(defn inline-stylesheet []
+  (when *stylesheet*
+    (inline-css *stylesheet*)))
+ </pre></div>
+<p>The resulting look-and-feel resources are included together.</p>
+<div class=code><pre class='brush: clj'> 
+(defn look-and-feel []
+  (inline-js (slurp-resource "XRegExp.js"))
+  (inline-js (slurp-resource "shCore.js"))
+  (inline-theme)
+  (inline-js (slurp-resource "outliner.0.5.0.62.js"))
+  (inline-css (slurp-resource "page.css"))
+  (inline-stylesheet))
+ </pre></div>
+<p>SyntaxHighlighter&rsquo;s defaults are not suitable, so they are tweaked.</p>
+<div class=code><pre class='brush: clj'> 
+(defn syntax-highlighter-setup []
+  (inline-js
+    (str "SyntaxHighlighter.defaults['toolbar'] = false;"
+         "SyntaxHighlighter.defaults['smart-tabs'] = false;"
+         "SyntaxHighlighter.defaults['gutter'] = false;"
+         "SyntaxHighlighter.defaults['unindent'] = false;"
+         "SyntaxHighlighter.all();")))
+ </pre></div>
+<p><a href="http://code.google.com/p/h5o/">h50</a>, the HTML5 outliner is used to create a table of contents.</p>
+<div class=code><pre class='brush: clj'> 
+(defn outliner-setup []
+  (println "&lt;div id=outline&gt;&lt;/div&gt;")
+  (inline-js
+    (str "var outline = document.getElementById('outline');"
+         "outline.innerHTML = HTML5Outline(document.body).asHTML(true);"
+         "var children = outline.firstElementChild.firstElementChild.children;"
+         "outline.removeChild(outline.firstElementChild);"
+         "for (var i = 1; i &lt; children.length; ++i) {"
+         "  outline.appendChild(children[i]);"
+         "}")))
+ </pre></div>
+<p>And here the two scripts are combined.</p>
+<div class=code><pre class='brush: clj'> 
+(defn javascript-setup []
+  (syntax-highlighter-setup)
+  (outliner-setup))
+     </pre></div>
+<h2>Output</h2><p>The output is HTML5 which is why no <code>html</code>, <code>head</code>, or <code>body</code> tags are present. The order of things in the output file is fairly normal for HTML: style and behaviour information first, followed by visible content, followed by the javascript entry-point.</p>
+<div class=code><pre class='brush: clj'> 
+(defn- render-files [paths]
+  (println
+    "&lt;!doctype html&gt;"
+    "&lt;meta charset=utf-8&gt;")
+  (look-and-feel)
+ </pre></div>
+<p>Multiple input files are rendered to a single stream. The content of each file&rsquo;s rendering is wrapped in its own <code>article</code> tags.</p>
+<div class=code><pre class='brush: clj'> 
+  (each (partial render-file "article") paths)
+  (inline-brushes)
+  (javascript-setup))
+ </pre></div>
+<p>The output stream can be a file or standard output or anything <code>clojure.java.io/writer</code> can handle.</p>
+<div class=code><pre class='brush: clj'> 
+(defn process-files [in-paths out]
+  (with-out-stream out
+    (render-files in-paths)))
+ </pre></div>
+<a id='commandline'></a>
+<h2>Commandline</h2><p>Use this program from the commandline like so.</p>
+<div class=code><pre class='brush: clj'> 
+(def usage "Usage: java -jar story.jar [options] &lt;input-files&gt;")
+
+(defn -main [&amp; args]
+  (let [[amap tail banner]
+        (cli/cli args
+ </pre></div>
+<p>For the brush, theme, and stylesheet options the program first tries to read from the filesystem and if that fails because the file is not found the an attempt is made to read from the program&rsquo;s resources. The resources contain the standard SyntaxHighlighter brushes and themes under their normal file names including an additional <code>shBrushClojure.js</code> and <code>shThemeClojure.css</code>.</p><p>Multiple brushes can be used by repeating the <code>-b</code> or <code>--brush</code> options. Additional brushes may be added by the program as a result of file includes and file suffixes.</p>
+<div class=code><pre class='brush: clj'> 
+                 ["-c" "--comment" "Comment syntax" :default ";"]
+                 ["-b" "--brush" "SyntaxHighlighter brush file" :multi true]
+                 ["-t" "--theme" "SyntaxHighlighter theme file"]
+                 ["-l" "--language" "SyntaxHighlighter language"]
+                 ["-s" "--stylesheet" "A stylesheet file to include"]
+                 ["-h" "--help" "Show this help" :default false :flag true])]
+    (if (or (not (seq tail)) (:help amap))
+      (do (println usage banner)
+        (System/exit 1))
+      (binding [*single-comment* (:comment amap)
+                *theme* (:theme amap)
+                *language* (or (:language amap) *language*)
+                *stylesheet* (:stylesheet amap)]
+        (swap! brushes #(or (set (:brush amap)) %))
+ </pre></div>
+<p>When no output file is given, the program renders to standard-out.</p>
+<div class=code><pre class='brush: clj'> 
+        (if (= 1 (count tail))
+          (process-files tail *out*)
+          (process-files (butlast tail) (last tail))))))) </pre></div>
+</section>
+</article>
 <script> // (inc clojure-brush) ;; an improved SyntaxHighlighter brush for clojure
 //
 // Copyright (C) 2011 Andrew Brehaut
@@ -3117,566 +3753,6 @@ net.brehaut.ClojureTools = (function (SH) {
   };
 })(SyntaxHighlighter);
  </script>
-<style> /**
- * SyntaxHighlighter
- * http://alexgorbatchev.com/SyntaxHighlighter
- *
- * SyntaxHighlighter is donationware. If you are using it, please donate.
- * http://alexgorbatchev.com/SyntaxHighlighter/donate.html
- *
- * @version
- * 3.0.83 (July 02 2010)
- * 
- * @copyright
- * Copyright (C) 2004-2010 Alex Gorbatchev.
- *
- * @license
- * Dual licensed under the MIT and GPL licenses.
- */
-.syntaxhighlighter {
-  background-color: transparent !important;
-}
-.syntaxhighlighter .line.alt1 {
-  background-color: transparent !important;
-}
-.syntaxhighlighter .line.alt2 {
-  background-color: transparent !important;
-}
-.syntaxhighlighter .line.highlighted.alt1, .syntaxhighlighter .line.highlighted.alt2 {
-  background-color: #c3defe !important;
-}
-.syntaxhighlighter .line.highlighted.number {
-  color: white !important;
-}
-.syntaxhighlighter table caption {
-  color: black !important;
-}
-.syntaxhighlighter .gutter {
-  color: #787878 !important;
-}
-.syntaxhighlighter .gutter .line {
-  border-right: 3px solid #d4d0c8 !important;
-}
-.syntaxhighlighter .gutter .line.highlighted {
-  background-color: #d4d0c8 !important;
-  color: white !important;
-}
-.syntaxhighlighter.printing .line .content {
-  border: none !important;
-}
-.syntaxhighlighter.collapsed {
-  overflow: visible !important;
-}
-.syntaxhighlighter.collapsed .toolbar {
-  color: #3f5fbf !important;
-  background: white !important;
-  border: 1px solid #d4d0c8 !important;
-}
-.syntaxhighlighter.collapsed .toolbar a {
-  color: #3f5fbf !important;
-}
-.syntaxhighlighter.collapsed .toolbar a:hover {
-  color: #aa7700 !important;
-}
-.syntaxhighlighter .toolbar {
-  color: #a0a0a0 !important;
-  background: #d4d0c8 !important;
-  border: none !important;
-}
-.syntaxhighlighter .toolbar a {
-  color: #a0a0a0 !important;
-}
-.syntaxhighlighter .toolbar a:hover {
-  color: red !important;
-}
-.syntaxhighlighter .plain, .syntaxhighlighter .plain a {
-  color: black !important;
-}
-.syntaxhighlighter .comments, .syntaxhighlighter .comments a {
-  color: #3f5fbf !important;
-}
-.syntaxhighlighter .string, .syntaxhighlighter .string a {
-  color: #2a00ff !important;
-}
-.syntaxhighlighter .keyword {
-  color: #7f0055 !important;
-}
-.syntaxhighlighter .preprocessor {
-  color: #646464 !important;
-}
-.syntaxhighlighter .variable {
-  color: #aa7700 !important;
-}
-.syntaxhighlighter .value {
-  color: #009900 !important;
-}
-.syntaxhighlighter .functions {
-  color: #ff1493 !important;
-}
-.syntaxhighlighter .constants {
-  color: #0066cc !important;
-}
-.syntaxhighlighter .script {
-  font-weight: bold !important;
-  color: #7f0055 !important;
-  background-color: none !important;
-}
-.syntaxhighlighter .color1, .syntaxhighlighter .color1 a {
-  color: gray !important;
-}
-.syntaxhighlighter .color2, .syntaxhighlighter .color2 a {
-  color: #ff1493 !important;
-}
-.syntaxhighlighter .color3, .syntaxhighlighter .color3 a {
-  color: red !important;
-}
-
-.syntaxhighlighter .keyword {
-  font-weight: bold !important;
-}
-.syntaxhighlighter .xml .keyword {
-  color: #3f7f7f !important;
-  font-weight: normal !important;
-}
-.syntaxhighlighter .xml .color1, .syntaxhighlighter .xml .color1 a {
-  color: #7f007f !important;
-}
-.syntaxhighlighter .xml .string {
-  font-style: italic !important;
-  color: #2a00ff !important;
-}
- </style>
-<script> /**
- * This code contains an implementation of HTML5 outlining algorithm, as described by WHATWG at [1]
- *
- * The copyright notice at [2] says:
- *		(c) Copyright 2004-2009 Apple Computer, Inc., Mozilla Foundation, and Opera Software ASA.
- *		You are granted a license to use, reproduce and create derivative works of this document.
- *
- * [1] http://www.whatwg.org/specs/web-apps/current-work/multipage/sections.html#outlines
- * [2] http://www.whatwg.org/specs/web-apps/current-work/multipage/index.html
- */
-(function(){var i=function(a){this.sections=[];this.startingNode=a};i.prototype={heading:false,append:function(a){a.container=this;this.sections.push(a)},asHTML:function(a){var b=u(this.heading);if(a)b='<a href="#'+v(this.startingNode)+'">'+b+"</a>";return b+q(this.sections,a)}};var q=function(a,b){for(var f="",c=0;c<a.length;c++)f+="<li>"+a[c].asHTML(b)+"</li>";return f==""?f:"<ol>"+f+"</ol>"},r=function(a){a=a.heading;return h(a)?j(a):1},u=function(a){if(h(a)){if(k(a)=="HGROUP")a=a.getElementsByTagName("h"+
--j(a))[0];return a.textContent||a.innerText||"<i>No text content inside "+a.nodeName+"</i>"}return""+a},v=function(a){var b=a.getAttribute("id");if(b)return b;do b="h5o-"+ ++s;while(t.getElementById(b));a.setAttribute("id",b);return b},e,d,g,s,t,w=function(a,b,f){var c=a;a:for(;c;){b(c);if(c.firstChild){c=c.firstChild;continue a}for(;c;){f(c);if(c.nextSibling){c=c.nextSibling;continue a}c=c==a?null:c.parentNode}}},x=function(a){if(!h(o(g)))if(l(a)||m(a)){e!=null&&g.push(e);e=a;d=new i(a);e.outline=
-{sections:[d],startingNode:a,asHTML:function(c){return q(this.sections,c)}}}else if(e!=null)if(h(a)){if(d.heading)if(j(a)>=r(n(e.outline))){var b=new i(a);e.outline.sections.push(b);d=b;d.heading=a}else{b=false;var f=d;do{if(j(a)<r(f)){b=new i(a);f.append(b);d=b;d.heading=a;b=true}f=f.container}while(!b)}else d.heading=a;g.push(a)}},y=function(a){var b=o(g);if(h(b))b==a&&g.pop();else{if((l(a)||m(a))&&!d.heading)d.heading="<i>Untitled "+k(a)+"</i>";if(l(a)&&g.length>0){e=g.pop();d=n(e.outline);for(b=
-0;b<a.outline.sections.length;b++)d.append(a.outline.sections[b])}else if(m(a)&&g.length>0){e=g.pop();for(d=n(e.outline);d.sections.length>0;)d=n(d)}else if(l(a)||m(a))d=e.outline.sections[0]}},k=function(a){return a.tagName.toUpperCase()},p=function(a){return function(b){return z(b)&&(new RegExp(a,"i")).test(k(b))}},m=p("^BLOCKQUOTE|BODY|DETAILS|FIELDSET|FIGURE|TD$"),l=p("^ARTICLE|ASIDE|NAV|SECTION$"),h=p("^H[1-6]|HGROUP$"),z=function(a){return a&&a.tagName},j=function(a){var b=k(a);if(b=="HGROUP")for(b=
-1;b<=6;b++){if(a.getElementsByTagName("H"+b).length>0)return-b}else return-parseInt(b.substr(1))},n=function(a){return o(a.sections)},o=function(a){return a[a.length-1]};HTML5Outline=function(a){s=0;t=a.ownerDocument||window.document;d=e=null;g=[];w(a,x,y);return e!=null?e.outline:null}})();
- </script>
-<style> div.code,
-pre
-{
-  background-color: #f5f5ff;
-  border: solid #e5e5ee 1px;
-  text-align: left;
-}
-
-body
-{
-  font-family: sans-serif;
-  font-size: 0.95em;
-  margin: 0 0 0 2em;
-  padding: 0;
-}
-
-h1, h2, h3, h4, h5, h6
-{
-  font-family: sans-serif;
-  color: #535388;
-}
-
-article
-{
-  margin: 0;
-  width: 38em;
-  text-align: justify;
-}
-
-article > h1
-{ font-size: 2.2em }
-
-article > h2,
-article > section > h1
-{ font-size: 1.6em }
-
-article > h3,
-article > section > h2,
-article > section > section > h1
-{ font-size: 1.3em }
-
-article > h4,
-article h5,
-article h6,
-article > section > h3,
-article > section > section > h2,
-article > section > section > section > h1
-{ font-size: 1em }
-
-article > h1
-{
-  color: white;
-  background-color: #9393aa;
-  margin: 0;
-  padding: 0.5em 0 0.8em 0;
-  text-align: center;
-}
-
-div#outline
-{
-  position: fixed;
-  top: 2em;
-  left: 41em;
-}
-
-div#outline > ol
-{ font-size: 0.8em }
-
-div#outline ol
-{
-  margin-left: 0;
-  padding-left: 1em;
-  list-style-type: none;
-}
-
-div#outline ol ol ol ol
-{
-  display: none;
-}
-
-div#outline a
-{
-  text-decoration: none;
-}
- </style>
-<article>
-<h1>A programming story</h1><p>This is the story of a small program that parses source code. It converts comments into HTML (via <a href="http://daringfireball.net/projects/markdown/">Markdown</a>) and nicely highlights code (using <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a>).</p>
-<div class=code><pre class='brush: clojure'> 
-(defproject
-  me.panzoo/story "0.0.1-SNAPSHOT"
-
-  :description "A literate programming tool."
- </pre></div>
-<p>The program is written in the <a href="http://clojure.org">Clojure</a> language and uses the <a href="https://github.com/sirthias/pegdown">pegdown</a> implementation of Markdown with a number of its extensions <a href="#pegdown-extensions">enabled</a>.</p>
-<div class=code><pre class='brush: clojure'> 
-  :dependencies
-  [[org.clojure/clojure "1.3.0"]
-   [org.pegdown/pegdown "1.1.0"]
-   ;[com.google.javascript/closure-compiler "r1592"]
-   [org.clojure/tools.cli "0.2.1"]]
-  
-  :main me.panzoo.story)
- </pre></div>
-<p>Check out the sources at <a href="https://github.com/jedahu/story">https://github.com/jedahu/story</a></p>
-<h2>Synopsis</h2><p>To use this program you need to know four things: the single-line comment syntax of your source-code, Markdown, the story syntax for anchors, and the story syntax for includes.</p><p>Comment blocks that are flush with the left margin are parsed and rendered using Markdown. Anchors are comment lines whose content is &lsquo;<code>@&lt;anchor-id&gt;</code>&rsquo;. To include another source file add a comment line whose content is &lsquo;<code>%include &lt;file-path&gt;</code>&rsquo;.</p><p>By default this program is set up to process a Lisp like language with single semi-colon comment tokens. A small source example with anchors, includes, and wiki links might look like this:</p>
-<div class=code><pre class='brush: clojure'>
-; # My awesome program
-;
-; Introductory paragraph. Fast forward to the [[code]].
-;
-; Blah blah blah.
-
-;@code
-(defn hello []
-  (println "Hello world!"))
-
-; See the code [again!](#code)
-
-;%include fibonacci.clj
-</pre></div><h3>Command line usage</h3><p><code>java -jar story.jar [-c|--comment &lt;token&gt;] [-o|-out &lt;outfile&gt;] &lt;input&gt;</code></p><p>For more detail run the program with the <code>--help</code> option or have a look at the <a href="#commandline-entry-point">commandline entry point</a>.</p>
-<section>
-<h1>The code</h1><p>The usual stuff comes first. This code needs to read and write to files, manipulate strings, and parse Markdown.</p>
-<div class=code><pre class='brush: clojure'> 
-(ns me.panzoo.story
-  (:refer-clojure :exclude [comment])
-  (:require
-    [clojure.java.io :as io]
-    [clojure.string :as string]
-    [clojure.tools.cli :as cli])
-  (:import
-    [org.pegdown PegDownProcessor Extensions
- </pre></div>
-<p>Internal links (to element ids) are nice to have. These imports will be used to create a modified LinkRenderer.</p>
-<div class=code><pre class='brush: clojure'> 
-     LinkRenderer LinkRenderer$Rendering]
-    [org.pegdown.ast WikiLinkNode])
- </pre></div>
-<p>To run from the commandline this namespace must be compiled with a <code>-main</code> method. When run from the REPL or from Leiningen <code>gen-class</code> does nothing.</p>
-<div class=code><pre class='brush: clojure'>   
-  (:gen-class))
- </pre></div>
-<h2>Utilities</h2><p>A few utility functions to make it easier to iterate side-effects through a collection, access resources, encode a string for use as an id or fragment identifier, and bind an output stream to <code>*out*</code> over a lexical scope.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn each
-  "Apply f to each item of coll in order for side effects only.
-  Returns nil."
-  [f coll]
-  (doseq [c coll]
-    (f c)))
-
-(defn slurp-resource
-  "Get the complete contents of a Java resource."
-  [resource-name]
-  (-&gt; (.getContextClassLoader (Thread/currentThread))
-    (.getResourceAsStream resource-name)
-    (java.io.InputStreamReader.)
-    (slurp)))
-
-(defn encode-anchor [s]
-  (java.net.URLEncoder/encode (.replace s " " "-") "UTF-8"))
-
-(defmacro with-out-stream [out &amp; body]
-  `(with-open [w# (io/writer ~out)]
-     (binding [*out* w#]
-       ~@body)))
- </pre></div>
-<h2>Top level variables</h2><p>A few objects need to be accessed by a number of functions: regular expressions that match the beginning of commented lines, SyntaxHighlighter options, a PegDownProcessor, and a modified LinkRenderer. Of these, the processor and renderer are never dynamically bound. The other variables are bound once for the lifetime of the program, so for the rest of the program they can be considered constant.</p><h3>Parsing variables</h3>
-<div class=code><pre class='brush: clojure'> 
-(def ^:dynamic *single-comment*
-  "A string containing a single comment token."
-  ";")
-
-(def comment
-  "A regular expression matching the beginning of a commented line."
-  (delay (re-pattern (str "^\\Q" *single-comment* "\\E ?"))))
-
-(def anchor
-  "A regular expression matching the beginning of an anchor line."
-  (delay (re-pattern (str @comment "@ *"))))
-
-(def include
-  "A regular expression matching the beginning of an include line."
-  (delay (re-pattern (str @comment "%include +"))))
- </pre></div>
-<h3>Style variables</h3>
-<div class=code><pre class='brush: clojure'> 
-(def ^:dynamic *brush*
-  "Path to a SyntaxHighlighter brush file."
-  nil)
-
-(def ^:dynamic *theme*
-  "Path to a SyntaxHighlighter theme file."
-  nil)
-
-(def ^:dynamic *language*
-  "A language string for use with SyntaxHighlighter."
-  "clojure")
-
-(def ^:dynamic *stylesheet*
-  "Path to a stylesheet file."
-  nil)
- </pre></div>
-<h3>Pegdown variables</h3>
-<a id='pegdown-extensions'></a>
-<div class=code><pre class='brush: clojure'> (def processor
-  "A PegDownProcessor set up with the following extensions:
-  AUTOLINKS
-  SMARTYPANTS
-  FENCED_CODE_BLOCKS
-  DEFINITIONS
-  WIKILINKS"
-  (PegDownProcessor. (bit-or
-                       (. Extensions AUTOLINKS)
-                       (. Extensions SMARTYPANTS)
-                       (. Extensions FENCED_CODE_BLOCKS)
-                       (. Extensions DEFINITIONS)
-                       (. Extensions WIKILINKS))))
-
-(def link-renderer
-  "A pegdown LinkRenderer that renders wiki links as links to internal
-  document fragments rather than external HTML pages."
-  (proxy [LinkRenderer] []
-    (render
-      ([node]
-       (if (instance? WikiLinkNode node)
-         (try
-           (LinkRenderer$Rendering.
-             (str
-               "#"
-               (encode-anchor (.. node (getText))))
-             (.getText node))
-           (catch java.io.UnsupportedEncodingException _
-             (throw (IllegalStateException.))))
-         (proxy-super render node)))
-      ([node text]
-       (proxy-super render node text))
-      ([node url title text]
-       (proxy-super render node url title text)))))
- </pre></div>
-<h2>Parsing</h2><p>Each line of a source file will be either code, comment, anchor, or include.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn- classify-line
-  "Classify a line as :code or :comment. Return a pair of the classification
-  and line string, sans leading comment tokens in the case of a comment."
-  [line]
-  (if-let [s (re-find @include line)]
-    [:include (.substring line (count s))]
-    (if-let [s (re-find @anchor line)]
-      [:anchor (.substring line (count s))]
-      (if-let [s (re-find @comment line)]
-        [:comment (.substring line (count s))]
-        [:code line]))))
- </pre></div>
-<p>Adjacent lines of the same classification need to be gathered together into a single string.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn- gather-lines- [lines]
-  (lazy-seq
-    (let [classfn (first (first lines))
-          [same tail] (if (#{:comment :code} classfn)
-                        (split-with #(= classfn (first %)) lines)
-                        (split-at 1 lines))
-          text (string/join "\n" (map second same))]
-      (when classfn (cons [classfn text] (gather-lines- tail))))))
-
-(defn- gather-lines [lines]
-  (gather-lines- (map classify-line lines)))
- </pre></div>
-<p>The result of gathering is a list of pairs of the form <code>[&lt;classification&gt; &lt;string&gt;]</code>.</p>
-<h2>Rendering</h2><p>The method that transforms each classified chunk into HTML, dispatches on the classification.</p>
-<div class=code><pre class='brush: clojure'> 
-(defmulti html&lt;- first)
- </pre></div>
-<p>Lines of source code are read lazily by <code>line-seq</code> and gathered lazily by <code>gather-lines</code>, Along with printing each chunk of comment or code to an output stream, this ensures that the maximum memory used by this program will be determined by the largest comment or code chunk and not the total size of the source file.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn render-file [tag path]
-  (with-open [r (io/reader path)]
-    (println (str "&lt;" tag "&gt;"))
-    (each html&lt;- (gather-lines (line-seq r)))
-    (println (str "&lt;/" tag "&gt;"))))
- </pre></div>
-<p>Code chunks are wrapped in a <code>pre</code> with the correct incantation for SyntaxHighlighter in its <code>class</code> attribute; comments are run through the Markdown processor; anchors become hrefless HTML anchors; and includes wrap the result of parsing and rendering the file they point to in <code>section</code> tags.</p>
-<div class=code><pre class='brush: clojure'> 
-(defmethod html&lt;- :code [[_ text]]
-  (when-not (string/blank? text)
-    (println (str "&lt;div class=code&gt;&lt;pre class='brush: " *language* "'&gt;")
-             (string/escape
-               text
-               {\&lt; "&amp;lt;"
-                \&gt; "&amp;gt;"
-                \&amp; "&amp;amp;"})
-             "&lt;/pre&gt;&lt;/div&gt;")))
-
-(defmethod html&lt;- :comment [[_ text]]
-  (println (.markdownToHtml processor text link-renderer)))
-
-(defmethod html&lt;- :anchor [[_ text]]
-  (println (str "&lt;a id='" (encode-anchor text) "'&gt;&lt;/a&gt;")))
-
-(defmethod html&lt;- :include [[_ path]]
-  (render-file "section" path))
- </pre></div>
-<h2>Look and feel</h2><p>All javascript and CSS is inlined in the output.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn- inline-js [s]
-  (println "&lt;script&gt;" s "&lt;/script&gt;"))
-
-(defn- inline-css [s]
-  (println "&lt;style&gt;" s "&lt;/style&gt;"))
- </pre></div>
-<p>The default SyntaxHighlighter brush and theme (clojure and eclipse) can be overridden on the commandline, and an additional stylesheet can be included too.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn inline-brush []
-  (inline-js
-    (if *brush*
-      (slurp *brush*)
-      (slurp-resource "shBrushClojure.js"))))
-
-(defn inline-theme []
-  (inline-css
-    (if *theme*
-      (slurp *theme*)
-      (slurp-resource "shThemeEclipse.css"))))
-
-(defn inline-stylesheet []
-  (when *stylesheet*
-    (inline-css *stylesheet*)))
- </pre></div>
-<p>The resulting look-and-feel resources are included together.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn look-and-feel []
-  (inline-js (slurp-resource "XRegExp.js"))
-  (inline-js (slurp-resource "shCore.js"))
-  (inline-brush)
-  (inline-theme)
-  (inline-js (slurp-resource "outliner.0.5.0.62.js"))
-  (inline-css (slurp-resource "page.css"))
-  (inline-stylesheet))
- </pre></div>
-<p>SyntaxHighlighter&rsquo;s defaults are not suitable, so they are tweaked.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn syntax-highlighter-setup []
-  (inline-js
-    (str "SyntaxHighlighter.defaults['toolbar'] = false;"
-         "SyntaxHighlighter.defaults['smart-tabs'] = false;"
-         "SyntaxHighlighter.defaults['gutter'] = false;"
-         "SyntaxHighlighter.defaults['unindent'] = false;"
-         "SyntaxHighlighter.all();")))
- </pre></div>
-<p><a href="http://code.google.com/p/h5o/">h50</a>, the HTML5 outliner is used to create a table of contents.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn outliner-setup []
-  (println "&lt;div id=outline&gt;&lt;/div&gt;")
-  (inline-js
-    (str "var outline = document.getElementById('outline');"
-         "outline.innerHTML = HTML5Outline(document.body).asHTML(true);"
-         "var children = outline.firstElementChild.firstElementChild.children;"
-         "outline.removeChild(outline.firstElementChild);"
-         "for (var i = 1; i &lt; children.length; ++i) {"
-         "  outline.appendChild(children[i]);"
-         "}")))
- </pre></div>
-<p>And here the two scripts are combined.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn javascript-setup []
-  (syntax-highlighter-setup)
-  (outliner-setup))
-     </pre></div>
-<h2>Output</h2><p>The output is HTML5 which is why no <code>html</code>, <code>head</code>, or <code>body</code> tags are present. The order of things in the output file is fairly normal for HTML: style and behaviour information first, followed by visible content, followed by the javascript entry-point.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn- render-files [paths]
-  (println
-    "&lt;!doctype html&gt;"
-    "&lt;meta charset=utf-8&gt;")
-  (look-and-feel)
- </pre></div>
-<p>Multiple input files are rendered to a single stream. The content of each file&rsquo;s rendering is wrapped in its own <code>article</code> tags.</p>
-<div class=code><pre class='brush: clojure'> 
-  (each (partial render-file "article") paths)
-  (javascript-setup))
- </pre></div>
-<p>The output stream can be a file or standard output or anything <code>clojure.java.io/writer</code> can handle.</p>
-<div class=code><pre class='brush: clojure'> 
-(defn process-files [in-paths out]
-  (with-out-stream out
-    (render-files in-paths)))
- </pre></div>
-<h2>Commandline</h2><p>Use this program from the commandline like so.</p>
-<a id='commandline-entry-point'></a>
-<div class=code><pre class='brush: clojure'> (def usage "Usage: java -jar story.jar [options] &lt;input-files&gt;")
-
-(defn -main [&amp; args]
-  (let [[amap tail banner]
-        (cli/cli args
-                 ["-c" "--comment" "Comment syntax" :default ";"]
-                 ["-b" "--brush" "SyntaxHighlighter brush file"]
-                 ["-t" "--theme" "SyntaxHighlighter theme file"]
-                 ["-l" "--language" "SyntaxHighlighter language"]
-                 ["-s" "--stylesheet" "A stylesheet file to include"]
-                 ["-h" "--help" "Show this help" :default false :flag true])]
-    (if (or (not (seq tail)) (:help amap))
-      (do (println usage banner)
-        (System/exit 1))
-      (binding [*single-comment* (:comment amap)
-                *brush* (:brush amap)
-                *theme* (:theme amap)
-                *language* (or (:language amap) *language*)
-                *stylesheet* (:stylesheet amap)]
- </pre></div>
-<p>When no output file is given, the program renders to standard-out.</p>
-<div class=code><pre class='brush: clojure'> 
-        (if (= 1 (count tail))
-          (process-files tail *out*)
-          (process-files (butlast tail) (last tail))))))) </pre></div>
-</section>
-</article>
 <script> SyntaxHighlighter.defaults['toolbar'] = false;SyntaxHighlighter.defaults['smart-tabs'] = false;SyntaxHighlighter.defaults['gutter'] = false;SyntaxHighlighter.defaults['unindent'] = false;SyntaxHighlighter.all(); </script>
 <div id=outline></div>
 <script> var outline = document.getElementById('outline');outline.innerHTML = HTML5Outline(document.body).asHTML(true);var children = outline.firstElementChild.firstElementChild.children;outline.removeChild(outline.firstElementChild);for (var i = 1; i < children.length; ++i) {  outline.appendChild(children[i]);} </script>

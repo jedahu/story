@@ -25,9 +25,14 @@
 
 ; ## Utilities
 ;
-; A few utility functions to make it easier to iterate side-effects through a
-; collection, access resources, encode a string for use as an id or fragment
-; identifier, and bind an output stream to `*out*` over a lexical scope.
+; A few utility functions to make it easier to print messages to the console,
+; iterate side-effects through a collection, access resources, encode a string
+; for use as an id or fragment identifier, and bind an output stream to `*out*`
+; over a lexical scope.
+
+(defn message [& s]
+  (binding [*out* (io/writer System/err)]
+    (println (apply str s))))
 
 (defn each
   "Apply f to each item of coll in order for side effects only.
@@ -38,11 +43,27 @@
 
 (defn slurp-resource
   "Get the complete contents of a Java resource."
-  [resource-name]
-  (-> (.getContextClassLoader (Thread/currentThread))
-    (.getResourceAsStream resource-name)
-    (java.io.InputStreamReader.)
-    (slurp)))
+  [resource-name & continue-on-failure?]
+  (try
+    (-> (.getContextClassLoader (Thread/currentThread))
+      (.getResourceAsStream resource-name)
+      (java.io.InputStreamReader.)
+      (slurp))
+    (catch Exception e
+      (message "failed to read resource " resource-name)
+      (if continue-on-failure?
+        (message "    continuing anyway...")
+        (do (message "    aborting...")
+          (throw e))))))
+
+(defn slurp-file|resource
+  "Get the contents of the file at path, or failing that, the contents of a
+  Java resource."
+  [path & continue-on-failure?]
+  (try (slurp path)
+    (catch java.io.FileNotFoundException _
+      (message path " not found; reading as a resource instead")
+      (slurp-resource path continue-on-failure?))))
 
 (defn encode-anchor [s]
   (java.net.URLEncoder/encode (.replace s " " "-") "UTF-8"))
@@ -67,27 +88,81 @@
   "A string containing a single comment token."
   ";")
 
-(def comment
+(defn comment
   "A regular expression matching the beginning of a commented line."
-  (delay (re-pattern (str "^\\Q" *single-comment* "\\E ?"))))
+  []
+  (re-pattern (str "^\\Q" *single-comment* "\\E ?")))
 
-(def anchor
+(defn anchor
   "A regular expression matching the beginning of an anchor line."
-  (delay (re-pattern (str @comment "@ *"))))
+  []
+  (re-pattern (str (comment) "@ *")))
 
-(def include
+(defn include
   "A regular expression matching the beginning of an include line."
-  (delay (re-pattern (str @comment "%include +"))))
+  []
+  (re-pattern (str (comment) "%include +")))
 
 ; ### Style variables
 
-(def ^:dynamic *brush*
-  "Path to a SyntaxHighlighter brush file."
-  nil)
+;@language map
+(def languages
+  "A map of language names to a pairs of comment syntax and SyntaxHighlighter
+  brush file names."
+  {"clojure" [";" "shBrushClojure.js"]
+   "clj" [";" "shBrushClojure.js"]
+   "cljs" [";" "shBrushClojure.js"]
+   "applescript" ["--" "shBrushAppleScript.js"]
+   "actionscript3" ["//" "shBrushAS3.js"]
+   "as3" ["//" "shBrushAS3.js"]
+   "bash" ["#" "shBrushBash.js"]
+   "shell" ["#" "shBrushBash.js"]
+   "sh" ["#" "shBrushBash.js"]
+   ;"coldfusion" "shBrushColdFusion.js"
+   "cpp" ["//" "shBrushCpp.js"]
+   "c++" ["//" "shBrushCpp.js"]
+   "cxx" ["//" "shBrushCpp.js"]
+   "c" ["//" "shBrushCpp.js"]
+   "c#" ["//" "shBrushCSharp.js"]
+   "c-sharp" ["//" "shBrushCSharp.js"]
+   "csharp" ["//" "shBrushCSharp.js"]
+   "delphi" ["//" "shBrushDelphi.js"]
+   "pascal" ["//" "shBrushDelphi.js"]
+   ;"diff" "shBrushDiff.js"
+   ;"patch" "shBrushDiff.js"
+   "erlang" ["%" "shBrushErlang.js"]
+   "erl" ["%" "shBrushErlang.js"]
+   "groovy" ["//" "shBrushGroovy.js"]
+   "java" ["//" "shBrushJava.js"]
+   "javafx" ["//" "shBrushJavaFX.js"]
+   "jfx" ["//" "shBrushJavaFX.js"]
+   "javascript" ["//" "shBrushJScript.js"]
+   "js" ["//" "shBrushJScript.js"]
+   "perl" ["#" "shBrushPerl.js"]
+   "pl" ["#" "shBrushPerl.js"]
+   "php" ["#" "shBrushPhp.js"]
+   ;"text" "shBrushPlain.js"
+   ;"txt" "shBrushPlain.js"
+   ;"plain" "shBrushPlain.js"
+   "python" ["#" "shBrushPython.js"]
+   "py" ["#" "shBrushPython.js"]
+   "ruby" ["#" "shBrushRuby.js"]
+   "rb" ["#" "shBrushRuby.js"]
+   "sass" ["//" "shBrushSass.js"]
+   "scss" ["//" "shBrushSass.js"]
+   "scala" ["//" "shBrushScala.js"]
+   "sql" ["--" "shBrushSql.js"]
+   "vb" ["'" "shBrushVb.js"]
+   "vbnet" ["'" "shBrushVb.js"]
+   ;"xml" "shBrushXml.js"
+   ;"xhtml" "shBrushXml.js"
+   ;"xslt" "shBrushXml.js"
+   ;"html" "shBrushXml.js"
+   })
 
 (def ^:dynamic *theme*
   "Path to a SyntaxHighlighter theme file."
-  nil)
+  "shThemeEclipse.css")
 
 (def ^:dynamic *language*
   "A language string for use with SyntaxHighlighter."
@@ -135,6 +210,10 @@
       ([node url title text]
        (proxy-super render node url title text)))))
 
+; ### Mutable variables
+
+(def brushes (atom #{}))
+
 ; ## Parsing
 ;
 ; Each line of a source file will be either code, comment, anchor, or include.
@@ -143,11 +222,11 @@
   "Classify a line as :code or :comment. Return a pair of the classification
   and line string, sans leading comment tokens in the case of a comment."
   [line]
-  (if-let [s (re-find @include line)]
-    [:include (.substring line (count s))]
-    (if-let [s (re-find @anchor line)]
+  (if-let [s (re-find (include) line)]
+    [:include (string/split (.substring line (count s)) #"\s+")]
+    (if-let [s (re-find (anchor) line)]
       [:anchor (.substring line (count s))]
-      (if-let [s (re-find @comment line)]
+      (if-let [s (re-find (comment) line)]
         [:comment (.substring line (count s))]
         [:code line]))))
 
@@ -156,18 +235,18 @@
 
 (defn- gather-lines- [lines]
   (lazy-seq
-    (let [classfn (first (first lines))
-          [same tail] (if (#{:comment :code} classfn)
-                        (split-with #(= classfn (first %)) lines)
-                        (split-at 1 lines))
-          text (string/join "\n" (map second same))]
-      (when classfn (cons [classfn text] (gather-lines- tail))))))
+    (when-let [classfn (first (first lines))]
+      (if (#{:comment :code} classfn)
+        (let [[same tail] (split-with #(= classfn (first %)) lines)
+              text (string/join "\n" (map second same))]
+          (cons [classfn text] (gather-lines- tail)))
+        (cons (first lines) (gather-lines- (rest lines)))))))
 
 (defn- gather-lines [lines]
   (gather-lines- (map classify-line lines)))
 
 ; The result of gathering is a list of pairs of the form
-; `[<classification> <string>]`.
+; `[<classification> <data>]`.
 
 ; ## Rendering
 ;
@@ -182,11 +261,18 @@
 ; be determined by the largest comment or code chunk and not the total size of
 ; the source file.
 
-(defn render-file [tag path]
-  (with-open [r (io/reader path)]
-    (println (str "<" tag ">"))
-    (each html<- (gather-lines (line-seq r)))
-    (println (str "</" tag ">"))))
+(defn render-file [tag path & [token lang]]
+  (let [lang (or lang (re-find #"(?<=\.)[^.]+$" path))
+        token (or token (first (languages lang)))]
+    (when-let [b (and lang (second (languages lang)))]
+      (message path " auto-associated with brush " b)
+      (swap! brushes conj b))
+    (with-open [r (io/reader path)]
+      (binding [*single-comment* (or token *single-comment*)
+                *language* (or lang *language*)]
+        (println (str "<" tag ">"))
+        (each html<- (gather-lines (line-seq r)))
+        (println (str "</" tag ">"))))))
 
 ; Code chunks are wrapped in a `pre` with the correct incantation for
 ; SyntaxHighlighter in its `class` attribute; comments are run through the
@@ -209,8 +295,9 @@
 (defmethod html<- :anchor [[_ text]]
   (println (str "<a id='" (encode-anchor text) "'></a>")))
 
-(defmethod html<- :include [[_ path]]
-  (render-file "section" path))
+(defmethod html<- :include [[_ [path & [token lang]] :as args]]
+  (let [lang (or lang (re-find #"(?<=\.)[^.]+$" path))]
+    (render-file "section" path token lang)))
 
 ; ## Look and feel
 ;
@@ -226,17 +313,14 @@
 ; overridden on the commandline, and an additional stylesheet can be included
 ; too.
 
-(defn inline-brush []
-  (inline-js
-    (if *brush*
-      (slurp *brush*)
-      (slurp-resource "shBrushClojure.js"))))
+(defn inline-brushes []
+  (message "Adding the following brushes to output:")
+  (each (partial message "    ") @brushes)
+  (each (comp inline-js #(slurp-file|resource % :continue-on-failure))
+        @brushes))
 
 (defn inline-theme []
-  (inline-css
-    (if *theme*
-      (slurp *theme*)
-      (slurp-resource "shThemeEclipse.css"))))
+  (inline-css (slurp-file|resource *theme* :continue-on-faliure)))
 
 (defn inline-stylesheet []
   (when *stylesheet*
@@ -247,7 +331,6 @@
 (defn look-and-feel []
   (inline-js (slurp-resource "XRegExp.js"))
   (inline-js (slurp-resource "shCore.js"))
-  (inline-brush)
   (inline-theme)
   (inline-js (slurp-resource "outliner.0.5.0.62.js"))
   (inline-css (slurp-resource "page.css"))
@@ -300,6 +383,7 @@
 ; file's rendering is wrapped in its own `article` tags.
 
   (each (partial render-file "article") paths)
+  (inline-brushes)
   (javascript-setup))
 
 ; The output stream can be a file or standard output or anything
@@ -309,18 +393,31 @@
   (with-out-stream out
     (render-files in-paths)))
 
+;@commandline
+;
 ; ## Commandline
 ;
 ; Use this program from the commandline like so.
 
-;@commandline entry point
 (def usage "Usage: java -jar story.jar [options] <input-files>")
 
 (defn -main [& args]
   (let [[amap tail banner]
         (cli/cli args
+
+; For the brush, theme, and stylesheet options the program first tries to read
+; from the filesystem and if that fails because the file is not found the
+; an attempt is made to read from the program's resources. The resources
+; contain the standard SyntaxHighlighter brushes and themes under their normal
+; file names including an additional `shBrushClojure.js` and
+; `shThemeClojure.css`.
+;
+; Multiple brushes can be used by repeating the `-b` or `--brush` options.
+; Additional brushes may be added by the program as a result of file includes
+; and file suffixes.
+
                  ["-c" "--comment" "Comment syntax" :default ";"]
-                 ["-b" "--brush" "SyntaxHighlighter brush file"]
+                 ["-b" "--brush" "SyntaxHighlighter brush file" :multi true]
                  ["-t" "--theme" "SyntaxHighlighter theme file"]
                  ["-l" "--language" "SyntaxHighlighter language"]
                  ["-s" "--stylesheet" "A stylesheet file to include"]
@@ -329,10 +426,10 @@
       (do (println usage banner)
         (System/exit 1))
       (binding [*single-comment* (:comment amap)
-                *brush* (:brush amap)
                 *theme* (:theme amap)
                 *language* (or (:language amap) *language*)
                 *stylesheet* (:stylesheet amap)]
+        (swap! brushes #(or (set (:brush amap)) %))
 
 ; When no output file is given, the program renders to standard-out.
 

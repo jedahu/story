@@ -22,7 +22,7 @@
   :dependencies
   [[org.clojure/clojure "1.3.0"]
    [org.pegdown/pegdown "1.1.0"]
-   [com.google.javascript/closure-compiler "r1592"]
+   ;[com.google.javascript/closure-compiler "r1592"]
    [org.clojure/tools.cli "0.2.1"]]
   
   :main me.panzoo.story)

@@ -2587,7 +2587,7 @@ div#outline a
   [[org.clojure/clojure "1.3.0"]
    [org.pegdown/pegdown "1.1.0"]
    ;[com.google.javascript/closure-compiler "r1592"]
-   [org.clojure/tools.cli "0.2.1"]]
+   [org.clojure/tools.cli "0.2.2-SNAPSHOT"]]
   
   :main me.panzoo.story)
  </pre></div>
@@ -2680,7 +2680,7 @@ lein uberjar
      (binding [*out* w#]
        ~@body)))
  </pre></div>
-<h2>Top level variables</h2><p>A few objects need to be accessed by a number of functions: regular expressions that match the beginning of commented lines, SyntaxHighlighter options, a PegDownProcessor, and a modified LinkRenderer. The dynamic variables are bound once for each file that is processed and are not mutated at any other time.</p><h3>Parsing variables</h3>
+<h2>Top level variables</h2><p>A few objects need to be accessed by a number of functions: regular expressions that match the beginning of commented lines, SyntaxHighlighter options, a PegDownProcessor, and a modified LinkRenderer. The dynamic variables are bound once for each file that is processed and are not mutated at any other time, except <code>*brushes*</code> which is bound once per invocation of <code>render-files</code>.</p><h3>Parsing variables</h3>
 <div class=code><pre class='brush: clj'> 
 (def ^:dynamic *single-comment*
   "A string containing a single comment token."
@@ -2767,6 +2767,11 @@ lein uberjar
   "A language string for use with SyntaxHighlighter."
   "clojure")
 
+(def ^:dynamic *static-brushes*
+  "A list of SyntaxHighlighter brushes that will always be included in the
+  output."
+  nil)
+
 (def ^:dynamic *stylesheet*
   "Path to a stylesheet file."
   nil)
@@ -2811,7 +2816,7 @@ lein uberjar
  </pre></div>
 <h3>Mutable variables</h3><p>Brushes can be added whenever a new file is processed. They must be path strings.</p>
 <div class=code><pre class='brush: clj'> 
-(def brushes (atom #{} :validator #(not (some (comp not string?) %))))
+(def ^:dynamic *brushes* nil)
  </pre></div>
 <h2>Parsing</h2><p>Each line of a source file will be either code, comment, anchor, or include.</p>
 <div class=code><pre class='brush: clj'> 
@@ -2855,9 +2860,9 @@ lein uberjar
 <p>SyntaxHighlighter brushes are associated with files if the language is supplied or can be worked out from the file suffix.</p>
 <div class=code><pre class='brush: clj'> 
     (when-let [b (and lang (second (languages lang)))]
-      (when-not (@brushes b)
+      (when-not (@*brushes* b)
         (message path " associated with brush " b)
-        (swap! brushes conj b)))
+        (swap! *brushes* conj b)))
  </pre></div>
 <p>For each file, new bindings are made for comment syntax and language. The strict function <code>each</code> is used instead of <code>for</code> because otherwise the bindings would go out of scope before enclosed code was fully executed; also, it&rsquo;s prettier.</p>
 <div class=code><pre class='brush: clj'> 
@@ -2902,16 +2907,20 @@ lein uberjar
 <div class=code><pre class='brush: clj'> 
 (defn inline-brushes []
   (message "Adding the following brushes to output:")
-  (each (partial message "    ") @brushes)
-  (each (comp inline-js #(slurp-file|resource % :continue-on-failure))
-        @brushes))
+  (each (partial message "    ") @*brushes*)
+  (each inline-js
+        (filter identity
+                (map #(slurp-file|resource % :continue-on-failure)
+                     @*brushes*))))
 
 (defn inline-theme []
-  (inline-css (slurp-file|resource *theme* :continue-on-faliure)))
+  (when-let [s (and *theme* (slurp-file|resource *theme* :continue-on-faliure))]
+    (inline-css s)))
 
 (defn inline-stylesheet []
-  (when *stylesheet*
-    (inline-css (slurp-file|resource *stylesheet* :continue-on-failure))))
+  (when-let [s (and *stylesheet*
+                    (slurp-file|resource *stylesheet* :continue-on-failure))]
+    (inline-css s)))
  </pre></div>
 <p>The resulting look-and-feel resources are included together.</p>
 <div class=code><pre class='brush: clj'> 
@@ -2954,7 +2963,7 @@ lein uberjar
      </pre></div>
 <h2>Output</h2><p>The output is HTML5 which is why no <code>html</code>, <code>head</code>, or <code>body</code> tags are present. The order of things in the output file is fairly normal for HTML: style and behaviour information first, followed by visible content, followed by the javascript entry-point.</p>
 <div class=code><pre class='brush: clj'> 
-(defn render-files [paths]
+(defn render-files- [paths]
   (println
     "&lt;!doctype html&gt;"
     "&lt;meta charset=utf-8&gt;")
@@ -2965,6 +2974,14 @@ lein uberjar
   (each (partial render-file "article") paths)
   (inline-brushes)
   (javascript-setup))
+
+(defn render-files [paths]
+ </pre></div>
+<p><code>*brushes*</code> is rebound on every invocation of <code>render-files</code>, because if it was not, unneeded brushes could accumulate and be included on subsequent calls to <code>render-files</code>.</p>
+<div class=code><pre class='brush: clj'> 
+  (binding [*brushes* (atom (or (set *static-brushes*) #{})
+                            :validator #(not (some (comp not string?) %)))]
+    (render-files- paths)))
  </pre></div>
 <p>The output stream can be a file or standard output or anything <code>clojure.java.io/writer</code> can handle.</p>
 <div class=code><pre class='brush: clj'> 
@@ -2993,13 +3010,13 @@ lein uberjar
 <p>For the brush, theme, and stylesheet options the program first tries to read from the filesystem and if that fails because the file is not found then an attempt is made to read from the program&rsquo;s resources. The resources contain the standard SyntaxHighlighter brushes and themes under their normal file names including an additional <code>shBrushClojure.js</code> and <code>shThemeClojure.css</code>.</p><p>Multiple brushes can be used by repeating the <code>-b</code> or <code>--brush</code> options. Additional brushes may be added by the program as a result of file includes and file suffixes.</p>
 <div class=code><pre class='brush: clj'> 
     (if (or (not (seq tail)) (:help amap))
-      (do (println usage "\n" banner)
+      (do (println (str usage "\n" banner))
         (System/exit 1))
       (binding [*single-comment* (:comment amap)
-                *theme* (:theme amap)
+                *theme* (or (:theme amap) *theme*)
                 *language* (or (:language amap) *language*)
-                *stylesheet* (:stylesheet amap)]
-        (swap! brushes #(or (set (:brush amap)) %))
+                *stylesheet* (:stylesheet amap)
+                *static-brushes* (:brush amap)]
  </pre></div>
 <p>When no output file is given, the program renders to standard-out.</p>
 <div class=code><pre class='brush: clj'> 

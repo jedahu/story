@@ -60,11 +60,32 @@
 ; ;%include fibonacci.clj
 ; </pre></div>
 ;
+; ### Build instructions
+;
+; To build `story.jar` make sure [Leiningen] is installed and run the following
+; commands in the story project directory:
+;
+; ~~~~
+; lein deps
+; lein uberjar
+; ~~~~
+;
+; If all goes well a file named something like `story-x.x.x-standalone.jar`
+; will have magically appeared in the project directory. Rename it to
+; `story.jar` if you like.
+;
+; [Leiningen]: https://github.com/technomancy/leiningen
+;
 ; ### Command line usage
 ;
-; `java -jar story.jar [-c|--comment <token>] [-o|-out <outfile>] <input>`
+; ~~~~
+; java -jar story.jar input-files > output
+; ~~~~
 ;
 ; For more detail run the program with the `--help` option or have a look at
 ; the [[commandline entry point]].
-
+;
+; This HTML document (assuming you are not reading the source file) was created
+; by the command: `java -jar story.jar project.clj > index.html`.
+;
 ;%include src/me/panzoo/story.clj

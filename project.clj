@@ -58,7 +58,14 @@
 ; ; See the code [again!](#code)
 ;
 ; ;%include fibonacci.clj
+; ;%include fibonacci.js // javascript
 ; </pre></div>
+;
+; As you can see, files written in different languages can be included. In this
+; example `fibonacci.js` is followed by the comment syntax and language name to
+; use with SyntaxHighlighter. For a number of languages this information can be
+; obtained from the file extension and the appropriate brush file pulled in
+; automatically; those languages are listed in the [[language map]].
 ;
 ; ### Build instructions
 ;
@@ -83,7 +90,7 @@
 ; ~~~~
 ;
 ; For more detail run the program with the `--help` option or have a look at
-; the [[commandline entry point]].
+; the [[commandline]] section.
 ;
 ; This HTML document (assuming you are not reading the source file) was created
 ; by the command: `java -jar story.jar project.clj > index.html`.

@@ -1,0 +1,61 @@
+div.code,
+pre
+{ background-color: #f5f5ff }
+
+div.code,
+pre
+{ border: solid #e5e5ee 1px }
+
+body
+{ font-family: sans-serif; }
+
+h1, h2, h3, h4, h5, h6
+{ font-family: sans-serif }
+
+article > h1
+{ font-size: 2.2em }
+
+article > h2,
+article > section > h1
+{ font-size: 1.6em }
+
+article > h3,
+article > section > h2,
+article > section > section > h1
+{ font-size: 1.3em }
+
+article > h4,
+article h5,
+article h6,
+article > section > h3,
+article > section > section > h2,
+article > section > section > section > h1
+{ font-size: 1em }
+
+article > h1
+{ background-color: #9393aa }
+
+article > h1
+{ color: white }
+
+h1, h2, h3, h4, h5, h6
+{ color: #535388 }
+
+body
+{ margin: 0 0 0 5% }
+
+article,
+article > h1
+{ margin: 0 }
+
+body
+{ padding: 0 }
+
+article > h1
+{ padding: 0.5em 0 0.8em 0 }
+
+article
+{ width: 40em }
+
+article > h1
+{ text-align: center }

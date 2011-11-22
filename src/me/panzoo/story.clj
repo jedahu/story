@@ -263,6 +263,9 @@
          "SyntaxHighlighter.defaults['unindent'] = false;"
          "SyntaxHighlighter.all();")))
 
+; [h50](http://code.google.com/p/h5o/), the HTML5 outliner is used to create
+; a table of contents.
+
 (defn outliner-setup []
   (println "<div id=outline></div>")
   (inline-js
@@ -273,6 +276,12 @@
          "for (var i = 1; i < children.length; ++i) {"
          "  outline.appendChild(children[i]);"
          "}")))
+
+; And here the two scripts are combined.
+
+(defn javascript-setup []
+  (syntax-highlighter-setup)
+  (outliner-setup))
     
 ; ## Output
 ;
@@ -291,8 +300,7 @@
 ; file's rendering is wrapped in its own `article` tags.
 
   (each (partial render-file "article") paths)
-  (syntax-highlighter-setup)
-  (outliner-setup))
+  (javascript-setup))
 
 ; The output stream can be a file or standard output or anything
 ; `clojure.java.io/writer` can handle.

@@ -79,7 +79,8 @@
 ; expressions that match the beginning of commented lines, SyntaxHighlighter
 ; options, a PegDownProcessor, and a modified LinkRenderer. The dynamic
 ; variables are bound once for each file that is processed and are not mutated
-; at any other time.
+; at any other time, except `*brushes*` which is bound once per invocation of
+; `render-files`.
 ;
 ; ### Parsing variables
 
@@ -177,6 +178,11 @@
   "A language string for use with SyntaxHighlighter."
   "clojure")
 
+(def ^:dynamic *static-brushes*
+  "A list of SyntaxHighlighter brushes that will always be included in the
+  output."
+  nil)
+
 (def ^:dynamic *stylesheet*
   "Path to a stylesheet file."
   nil)
@@ -230,7 +236,7 @@
 ; Brushes can be added whenever a new file is processed. They must be path
 ; strings.
 
-(def brushes (atom #{} :validator #(not (some (comp not string?) %))))
+(def ^:dynamic *brushes* nil)
 
 ; ## Parsing
 ;
@@ -287,9 +293,9 @@
 ; supplied or can be worked out from the file suffix.
 
     (when-let [b (and lang (second (languages lang)))]
-      (when-not (@brushes b)
+      (when-not (@*brushes* b)
         (message path " associated with brush " b)
-        (swap! brushes conj b)))
+        (swap! *brushes* conj b)))
 
 ; For each file, new bindings are made for comment syntax and language. The
 ; strict function `each` is used instead of `for` because otherwise the
@@ -348,16 +354,20 @@
 
 (defn inline-brushes []
   (message "Adding the following brushes to output:")
-  (each (partial message "    ") @brushes)
-  (each (comp inline-js #(slurp-file|resource % :continue-on-failure))
-        @brushes))
+  (each (partial message "    ") @*brushes*)
+  (each inline-js
+        (filter identity
+                (map #(slurp-file|resource % :continue-on-failure)
+                     @*brushes*))))
 
 (defn inline-theme []
-  (inline-css (slurp-file|resource *theme* :continue-on-faliure)))
+  (when-let [s (and *theme* (slurp-file|resource *theme* :continue-on-faliure))]
+    (inline-css s)))
 
 (defn inline-stylesheet []
-  (when *stylesheet*
-    (inline-css (slurp-file|resource *stylesheet* :continue-on-failure))))
+  (when-let [s (and *stylesheet*
+                    (slurp-file|resource *stylesheet* :continue-on-failure))]
+    (inline-css s)))
 
 ; The resulting look-and-feel resources are included together.
 
@@ -406,7 +416,7 @@
 ; style and behaviour information first, followed by visible content, followed
 ; by the javascript entry-point.
 
-(defn render-files [paths]
+(defn render-files- [paths]
   (println
     "<!doctype html>"
     "<meta charset=utf-8>")
@@ -418,6 +428,16 @@
   (each (partial render-file "article") paths)
   (inline-brushes)
   (javascript-setup))
+
+(defn render-files [paths]
+
+; `*brushes*` is rebound on every invocation of `render-files`, because if it
+; was not, unneeded brushes could accumulate and be included on subsequent
+; calls to `render-files`.
+
+  (binding [*brushes* (atom (or (set *static-brushes*) #{})
+                            :validator #(not (some (comp not string?) %)))]
+    (render-files- paths)))
 
 ; The output stream can be a file or standard output or anything
 ; `clojure.java.io/writer` can handle.
@@ -460,13 +480,13 @@
 ; and file suffixes.
 
     (if (or (not (seq tail)) (:help amap))
-      (do (println usage "\n" banner)
+      (do (println (str usage "\n" banner))
         (System/exit 1))
       (binding [*single-comment* (:comment amap)
-                *theme* (:theme amap)
+                *theme* (or (:theme amap) *theme*)
                 *language* (or (:language amap) *language*)
-                *stylesheet* (:stylesheet amap)]
-        (swap! brushes #(or (set (:brush amap)) %))
+                *stylesheet* (:stylesheet amap)
+                *static-brushes* (:brush amap)]
 
 ; When no output file is given, the program renders to standard-out.
 

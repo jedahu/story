@@ -93,14 +93,25 @@
 ; ### Command line usage
 ;
 ; ~~~~
-; java -jar story.jar input-files > output
+; java -jar story.jar input-files output
 ; ~~~~
 ;
-; For more detail run the program with the `--help` option or have a look at
-; the [[commandline]] section.
+; If `output` is absent, the program's output is streamed to standard-out. For
+; more detail run the program with the `--help` option or have a look at the
+; [[commandline]] section.
 ;
 ; This HTML document (assuming you are not reading the source file) was created
-; by the command: `java -jar story.jar project.clj > index.html`.
+; by the command: `java -jar story.jar project.clj index.html`.
+;
+; ### Programmatic usage
+;
+; Call [`me.panzoo.story/process-files`](#process-files) with a list of file
+; paths and an output stream or file-path. It may be necessary to set up
+; bindings for one or more of the dynamic variables described in the [top level
+; variables](#top-level-vars) section depending on whether the file suffixes
+; are in the [[language map]] or not.
+;
+; The equivalent of the above commandline invocation is: `(process-files ["project.clj"] "index.html")`.
 ;
 ;%include src/me/panzoo/story.clj
 ;%include folding.vim

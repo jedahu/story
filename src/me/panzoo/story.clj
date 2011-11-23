@@ -316,19 +316,19 @@
 
   (binding [*language* (or lang
                            (re-find #"(?<=\.)[^.]+$" path)
-                           *language*)
-            *single-comment* (or token
-                                 (first (languages *language*))
-                                 *single-comment*)]
-    (wrap-in-tags tag
-      (if (#{"markdown" "md"} *language*)
+                           *language*)]
+    (binding [*single-comment* (or token
+                                   (first (languages *language*))
+                                   *single-comment*)]
+      (wrap-in-tags tag
+        (if (#{"markdown" "md"} *language*)
 
 ; A markdown file is a special case. It is treated as a single comment block.
 
-        (html<- [:comment (slurp path)])
-        (do
-          (maybe-associate-brush path *language*)
-          (with-open [r (io/reader path)]
+          (html<- [:comment (slurp path)])
+          (do
+            (maybe-associate-brush path *language*)
+            (with-open [r (io/reader path)]
 
 ; Lines of source code are read lazily by `line-seq` and gathered lazily by
 ; `gather-lines`, Along with printing each chunk of comment or code to an
@@ -336,7 +336,7 @@
 ; be determined by the largest comment or code chunk and not the total size of
 ; the source file.
 
-            (each html<- (gather-lines (line-seq r)))))))))
+              (each html<- (gather-lines (line-seq r))))))))))
 
 ; Code chunks are wrapped in a `pre` with the correct incantation for
 ; SyntaxHighlighter in its `class` attribute; comments are run through the

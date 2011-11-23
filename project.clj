@@ -103,3 +103,4 @@
 ; by the command: `java -jar story.jar project.clj > index.html`.
 ;
 ;%include src/me/panzoo/story.clj
+;%include folding.vim

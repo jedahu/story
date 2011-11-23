@@ -8,7 +8,7 @@
 ; [SyntaxHighlighter]: http://alexgorbatchev.com/SyntaxHighlighter/
 
 (defproject
-  me.panzoo/story "0.0.1"
+  me.panzoo/story "0.0.2-SNAPSHOT"
 
   :description "A literate programming tool."
 

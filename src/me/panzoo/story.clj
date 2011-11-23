@@ -24,6 +24,10 @@
   
   (:gen-class))
 
+(def ^:dynamic *verbose?*
+  "Whether to log messages to std-err or not."
+  false)
+
 ; ## Utilities
 ;
 ; A few utility functions to make it easier to print messages to the console,
@@ -32,8 +36,9 @@
 ; over a lexical scope.
 
 (defn message [& s]
-  (binding [*out* (io/writer System/err)]
-    (println (apply str s))))
+  (when *verbose?*
+    (binding [*out* (io/writer System/err)]
+      (println (apply str s)))))
 
 (defn each
   "Apply f to each item of coll in order for side effects only.
@@ -489,6 +494,8 @@
                  ["-t" "--theme" "SyntaxHighlighter theme file"]
                  ["-l" "--language" "SyntaxHighlighter language"]
                  ["-s" "--stylesheet" "A stylesheet file to include"]
+                 ["-v" "--verbose" "Turn on verbose output"
+                  :default false :flag true]
                  ["-h" "--help" "Show this help" :default false :flag true])]
 
 ; For the brush, theme, and stylesheet options the program first tries to read
@@ -509,7 +516,8 @@
                 *theme* (or (:theme amap) *theme*)
                 *language* (or (:language amap) *language*)
                 *stylesheet* (:stylesheet amap)
-                *static-brushes* (:brush amap)]
+                *static-brushes* (:brush amap)
+                *verbose?* (:verbose amap)]
 
 ; When no output file is given, the program renders to standard-out.
 

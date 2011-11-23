@@ -471,7 +471,11 @@
 ; The output stream can be a file or standard output or anything
 ; `clojure.java.io/writer` can handle.
 
-(defn process-files [in-paths out]
+;@process-files
+(defn process-files
+  "Take a list of file paths and an output stream, and render each file to the
+  stream as HTML."
+  [in-paths out]
   (with-out-stream out
     (render-files in-paths)))
 

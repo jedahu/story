@@ -6,7 +6,6 @@
 ;
 ; [MarkDown]: http://daringfireball.net/projects/markdown/
 ; [SyntaxHighlighter]: http://alexgorbatchev.com/SyntaxHighlighter/
-
 (defproject
   me.panzoo/story "0.0.2-SNAPSHOT"
 
@@ -18,7 +17,6 @@
 ;
 ; [Clojure]: http://clojure.org
 ; [pegdown]: https://github.com/sirthias/pegdown
-
   :dependencies
   [[org.clojure/clojure "1.3.0"]
    [org.pegdown/pegdown "1.1.0"]
@@ -29,13 +27,13 @@
 ;
 ; [m]: https://github.com/jedahu/tools.cli
 ; [p]: https://github.com/clojure/tools.cli/pull/5
-
    [me.panzoo/tools.cli "0.2.2"]]
   
   :main me.panzoo.story)
 
 ; Check out the sources at https://github.com/jedahu/story
-
+;
+;
 ; ## Synopsis
 ;
 ; To use this program you need to know four things: the single-line comment
@@ -74,6 +72,7 @@
 ; obtained from the file extension and the appropriate brush file pulled in
 ; automatically; those languages are listed in the [[language map]].
 ;
+;
 ; ### Build instructions
 ;
 ; To build `story.jar` make sure [Leiningen] is installed and run the following
@@ -90,6 +89,7 @@
 ;
 ; [Leiningen]: https://github.com/technomancy/leiningen
 ;
+;
 ; ### Command line usage
 ;
 ; ~~~~
@@ -103,6 +103,7 @@
 ; This HTML document (assuming you are not reading the source file) was created
 ; by the command: `java -jar story.jar project.clj index.html`.
 ;
+;
 ; ### Programmatic usage
 ;
 ; Call [`me.panzoo.story/process-files`](#process-files) with a list of file
@@ -111,7 +112,8 @@
 ; variables](#top-level-vars) section depending on whether the file suffixes
 ; are in the [[language map]] or not.
 ;
-; The equivalent of the above commandline invocation is: `(process-files ["project.clj"] "index.html")`.
+; The equivalent of the above commandline invocation is: `(process-files
+; ["project.clj"] "index.html")`.
 ;
 ;%include src/me/panzoo/story.clj
 ;%include folding.vim

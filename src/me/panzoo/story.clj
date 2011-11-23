@@ -2,7 +2,6 @@
 ;
 ; The usual stuff comes first. This code needs to read and write to files,
 ; manipulate strings, and parse Markdown.
-
 (ns me.panzoo.story
   (:refer-clojure :exclude [comment])
   (:require
@@ -15,104 +14,57 @@
 
 ; Internal links (to element ids) are nice to have. These imports will be used
 ; to create a modified LinkRenderer.
-
      LinkRenderer LinkRenderer$Rendering]
     [org.pegdown.ast WikiLinkNode])
 
 ; To run from the commandline this namespace must be compiled with a `-main`
 ; method. When run from the REPL or from Leiningen `gen-class` does nothing.
-  
   (:gen-class))
 
-(def ^:dynamic *verbose?*
-  "Whether to log messages to std-err or not."
-  false)
-
-; ## Utilities
-;
-; A few utility functions to make it easier to print messages to the console,
-; iterate side-effects through a collection, access resources, encode a string
-; for use as an id or fragment identifier, and bind an output stream to `*out*`
-; over a lexical scope.
-
-(defn message [& s]
-  (when *verbose?*
-    (binding [*out* (io/writer System/err)]
-      (println (apply str s)))))
-
-(defn each
-  "Apply f to each item of coll in order for side effects only.
-  Returns nil."
-  [f coll]
-  (doseq [c coll]
-    (f c)))
-
-(defn slurp-resource
-  "Get the complete contents of a Java resource."
-  [resource-name & continue-on-failure?]
-  (try
-    (-> (.getContextClassLoader (Thread/currentThread))
-      (.getResourceAsStream resource-name)
-      (java.io.InputStreamReader.)
-      (slurp))
-    (catch Exception e
-      (message "Failed to read resource " resource-name)
-      (if continue-on-failure?
-        (message "    continuing anyway...")
-        (do (message "    aborting...")
-          (throw e))))))
-
-(defn slurp-file|resource
-  "Get the contents of the file at path, or failing that, the contents of a
-  Java resource."
-  [path & continue-on-failure?]
-  (try (slurp path)
-    (catch java.io.FileNotFoundException _
-      (message "Using internal " path)
-      (slurp-resource path continue-on-failure?))))
-
-(defn encode-anchor [s]
-  (java.net.URLEncoder/encode (.replace s " " "-") "UTF-8"))
-
-(defmacro with-out-stream [out & body]
-  `(with-open [w# (io/writer ~out)]
-     (binding [*out* w#]
-       ~@body)))
 
 ;@top-level-vars
 ; ## Top level variables
 ;
 ; A few objects need to be accessed by a number of functions: regular
 ; expressions that match the beginning of commented lines, SyntaxHighlighter
-; options, a PegDownProcessor, and a modified LinkRenderer. The dynamic
-; variables are bound once for each file that is processed and are not mutated
-; at any other time, except `*brushes*` which is bound once per invocation of
-; `render-files`.
+; options, a PegDownProcessor, and a modified LinkRenderer.
 ;
-; ### Parsing variables
+;
+; ### Settings
+;
+; This dynamic variable is bound once in the commandline `-main` method and is
+; never subsequently altered by the code in this namespace. The variable is
+; bound to a map containing the following settings: which SyntaxHighlighter
+; theme to use; which SyntaxHighlighter brushes to include to start with (other
+; brushes may be added automatically by the program); what CSS file to include
+; if any; and whether to log messages to std-err or not.
+(def ^:dynamic *settings*
+  {:theme "shThemeEclipse.css"
+   :static-brushes []
+   :stylesheet nil
+   :verbose? false})
+
+
+; ### Per file
+;
+; These variables are rebound for every input file.
 
 (def ^:dynamic *single-comment*
   "A string containing a single comment token."
   ";")
 
-(defn comment
-  "A regular expression matching the beginning of a commented line."
-  []
-  (re-pattern (str "^" (Pattern/quote *single-comment*) " ?")))
+(def ^:dynamic *language*
+  "A language string for use with SyntaxHighlighter."
+  "clojure")
 
-(defn anchor
-  "A regular expression matching the beginning of an anchor line."
-  []
-  (re-pattern (str (comment) "@ *")))
+; Brushes can be added by the program whenever a new file is processed. They
+; must be path strings. This variable is given a binding only in the
+; `[[render-files]]` function.
+(def ^:dynamic *brushes* nil)
 
-(defn include
-  "A regular expression matching the beginning of an include line."
-  []
-  (re-pattern (str (comment) "%include +")))
-
-; ### Style variables
 
 ;@language map
+; ### Language map
 ;
 ; Including SyntaxHighlighter brush files automatically based on file suffix or
 ; the language argument to an include directive is preferrable to explicitly
@@ -122,7 +74,6 @@
 ; Some languages are commented out because they either do not have comments or
 ; because they only have block comments. Their dull lifeless forms remind the
 ; maintainer of this program to do something about that.
-
 (def languages
   "A map of language names to a pairs of comment syntax and SyntaxHighlighter
   brush file names."
@@ -179,25 +130,9 @@
    ;"html" "shBrushXml.js"
    })
 
-(def ^:dynamic *theme*
-  "Path to a SyntaxHighlighter theme file."
-  "shThemeEclipse.css")
 
-(def ^:dynamic *language*
-  "A language string for use with SyntaxHighlighter."
-  "clojure")
-
-(def ^:dynamic *static-brushes*
-  "A list of SyntaxHighlighter brushes that will always be included in the
-  output."
-  nil)
-
-(def ^:dynamic *stylesheet*
-  "Path to a stylesheet file."
-  nil)
-
-; ### Pegdown variables
-
+; ### Pegdown instances
+;
 ; The same [pegdown processor][pp] and [link renderer][lr] are used for each
 ; program execution.
 ;
@@ -240,17 +175,80 @@
       ([node url title text]
        (proxy-super render node url title text)))))
 
-; ### Mutable variables
-;
-; Brushes can be added whenever a new file is processed. They must be path
-; strings.
 
-(def ^:dynamic *brushes* nil)
+; ## Utilities
+;
+; A few utility functions to make it easier to print messages to the console,
+; iterate side-effects through a collection, access resources, encode a string
+; for use as an id or fragment identifier, and bind an output stream to `*out*`
+; over a lexical scope.
+
+(defn message [& s]
+  (when (:verbose? *settings*)
+    (binding [*out* (io/writer System/err)]
+      (println (apply str s)))))
+
+(defn each
+  "Apply f to each item of coll in order for side effects only.
+  Returns nil."
+  [f coll]
+  (doseq [c coll]
+    (f c)))
+
+(defn slurp-resource
+  "Get the complete contents of a Java resource."
+  [resource-name & continue-on-failure?]
+  (try
+    (-> (.getContextClassLoader (Thread/currentThread))
+      (.getResourceAsStream resource-name)
+      (java.io.InputStreamReader.)
+      (slurp))
+    (catch Exception e
+      (message "Failed to read resource " resource-name)
+      (if continue-on-failure?
+        (message "    continuing anyway...")
+        (do (message "    aborting...")
+          (throw e))))))
+
+(defn slurp-file|resource
+  "Get the contents of the file at path, or failing that, the contents of a
+  Java resource."
+  [path & continue-on-failure?]
+  (try (slurp path)
+    (catch java.io.FileNotFoundException _
+      (message "Using internal " path)
+      (slurp-resource path continue-on-failure?))))
+
+(defn encode-anchor [s]
+  (java.net.URLEncoder/encode (.replace s " " "-") "UTF-8"))
+
+(defmacro with-out-stream [out & body]
+  `(with-open [w# (io/writer ~out)]
+     (binding [*out* w#]
+       ~@body)))
+
+
+; ### Regular expression helpers
+
+(defn comment
+  "A regular expression matching the beginning of a commented line."
+  []
+  (re-pattern (str "^" (Pattern/quote *single-comment*) " ?")))
+
+(defn anchor
+  "A regular expression matching the beginning of an anchor line."
+  []
+  (re-pattern (str (comment) "@ *")))
+
+(defn include
+  "A regular expression matching the beginning of an include line."
+  []
+  (re-pattern (str (comment) "%include +")))
+
 
 ; ## Parsing
 ;
 ; Each line of a source file will be either code, comment, anchor, or include.
-
 (defn classify-line
   "Classify a line as :code or :comment. Return a pair of the classification
   and line string, sans leading comment tokens in the case of a comment."
@@ -265,7 +263,6 @@
 
 ; Adjacent lines of the same classification need to be gathered together into
 ; a single string except for anchors and includes.
-
 (defn gather-lines- [lines]
   (lazy-seq
     (when-let [classfn (first (first lines))]
@@ -280,17 +277,16 @@
 
 ; The result of gathering is a list of pairs of the form
 ; `[<classification> <data>]`.
-
+;
+;
 ; ## Rendering
 ;
 ; The method that transforms each classified chunk into HTML, dispatches on the
 ; classification.
-
 (defmulti html<- first)
 
 ; SyntaxHighlighter brushes are associated with files if the language is
 ; supplied or can be worked out from the file suffix.
-
 (defn maybe-associate-brush [path lang]
   (when-let [b (and lang (second (languages lang)))]
     (when-not (@*brushes* b)
@@ -299,7 +295,6 @@
 
 ; The output of each file is wrapped in `article` or `section` tags. Article
 ; tags for top-level files and section tags for included ones.
-
 (defmacro wrap-in-tags [tag & body]
   `(do
      (println (str "<" ~tag ">"))
@@ -313,7 +308,6 @@
 ; from the `path` suffix, and if that fails they are set to the values they
 ; have in the enclsing dynamic scope (i.e., from the commandline or the
 ; including file).
-
   (binding [*language* (or lang
                            (re-find #"(?<=\.)[^.]+$" path)
                            *language*)]
@@ -324,7 +318,6 @@
         (if (#{"markdown" "md"} *language*)
 
 ; A markdown file is a special case. It is treated as a single comment block.
-
           (html<- [:comment (slurp path)])
           (do
             (maybe-associate-brush path *language*)
@@ -335,14 +328,13 @@
 ; output stream, this ensures that the maximum memory used by this program will
 ; be determined by the largest comment or code chunk and not the total size of
 ; the source file.
-
               (each html<- (gather-lines (line-seq r))))))))))
 
 ; Code chunks are wrapped in a `pre` with the correct incantation for
 ; SyntaxHighlighter in its `class` attribute; comments are run through the
 ; Markdown processor; anchors become hrefless HTML anchors; and includes wrap
 ; the result of parsing and rendering the file they point to in `section` tags.
-
+;
 (defmethod html<- :code [[_ text]]
   (when-not (string/blank? text)
     (println (str "<div class=code><pre class='brush: " *language* "'>")
@@ -362,6 +354,7 @@
 (defmethod html<- :include [[_ [path & [token lang]] :as args]]
   (let [lang (or lang (re-find #"(?<=\.)[^.]+$" path))]
     (render-file "section" path token lang)))
+
 
 ; ## Look and feel
 ;
@@ -390,16 +383,20 @@
                      @*brushes*))))
 
 (defn inline-theme []
-  (when-let [s (and *theme* (slurp-file|resource *theme* :continue-on-faliure))]
+  (when-let [s (and (:theme *settings*)
+                    (slurp-file|resource
+                      (:theme *settings*)
+                      :continue-on-faliure))]
     (inline-css s)))
 
 (defn inline-stylesheet []
-  (when-let [s (and *stylesheet*
-                    (slurp-file|resource *stylesheet* :continue-on-failure))]
+  (when-let [s (and (:stylesheet *settings*)
+                    (slurp-file|resource
+                      (:stylesheet *settings*)
+                      :continue-on-failure))]
     (inline-css s)))
 
 ; The resulting look-and-feel resources are included together.
-
 (defn look-and-feel []
   (inline-js (slurp-resource "XRegExp.js"))
   (inline-js (slurp-resource "shCore.js"))
@@ -409,7 +406,6 @@
   (inline-stylesheet))
 
 ; SyntaxHighlighter's defaults are not suitable, so they are tweaked.
-
 (defn syntax-highlighter-setup []
   (inline-js
     (str "SyntaxHighlighter.defaults['toolbar'] = false;"
@@ -420,7 +416,6 @@
 
 ; [h50](http://code.google.com/p/h5o/), the HTML5 outliner is used to create
 ; a table of contents.
-
 (defn outliner-setup []
   (println "<div id=outline></div>")
   (inline-js
@@ -433,18 +428,17 @@
          "}")))
 
 ; And here the two scripts are combined.
-
 (defn javascript-setup []
   (syntax-highlighter-setup)
   (outliner-setup))
     
+
 ; ## Output
 ;
 ; The output is HTML5 which is why no `html`, `head`, or `body` tags are
 ; present. The order of things in the output file is fairly normal for HTML:
 ; style and behaviour information first, followed by visible content, followed
 ; by the javascript entry-point.
-
 (defn render-files- [paths]
   (println
     "<!doctype html>"
@@ -453,17 +447,16 @@
 
 ; Multiple input files are rendered to a single stream. The content of each
 ; file's rendering is wrapped in its own `article` tags.
-
   (each (partial render-file "article") paths)
   (inline-brushes)
   (javascript-setup))
 
+;@render-files
 (defn render-files [paths]
 
 ; `*brushes*` is rebound on every invocation of `render-files`, because if it
 ; was not, unneeded brushes could accumulate and be included on subsequent
 ; calls to `render-files`.
-
   (binding [*brushes* (atom (or (set *static-brushes*) #{})
                             :validator #(not (some (comp not string?) %)))]
     (render-files- paths)))
@@ -479,12 +472,12 @@
   (with-out-stream out
     (render-files in-paths)))
 
+
 ;@commandline
 ;
 ; ## Commandline
 ;
 ; Use this program from the commandline like so.
-
 (def usage "Usage: java -jar story.jar [options] <input-files>")
 
 (defn -main [& args]
@@ -493,7 +486,6 @@
 
 ; Here is a list of the options this program can take when run from the
 ; commandline.
-
                  ["-c" "--comment" "Comment syntax" :default ";"]
                  ["-b" "--brush" "SyntaxHighlighter brush file" :multi true]
                  ["-t" "--theme" "SyntaxHighlighter theme file"]
@@ -513,19 +505,17 @@
 ; Multiple brushes can be used by repeating the `-b` or `--brush` options.
 ; Additional brushes may be added by the program as a result of file includes
 ; and file suffixes.
-
     (if (or (not (seq tail)) (:help amap))
       (do (println (str usage "\n" banner))
         (System/exit 1))
-      (binding [*single-comment* (:comment amap)
-                *theme* (or (:theme amap) *theme*)
-                *language* (or (:language amap) *language*)
-                *stylesheet* (:stylesheet amap)
-                *static-brushes* (:brush amap)
-                *verbose?* (:verbose amap)]
+      (binding [*settings* {:theme (:theme amap)
+                            :stylesheet (:stylesheet amap)
+                            :static-brushes (:brush amap)
+                            :verbose? (:verbose amap)}
+                *single-comment* (:comment amap)
+                *language* (or (:language amap) *language*)]
 
 ; When no output file is given, the program renders to standard-out.
-
         (if (= 1 (count tail))
           (process-files tail *out*)
           (process-files (butlast tail) (last tail)))))))

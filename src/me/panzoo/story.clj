@@ -79,6 +79,7 @@
      (binding [*out* w#]
        ~@body)))
 
+;@top-level-vars
 ; ## Top level variables
 ;
 ; A few objects need to be accessed by a number of functions: regular

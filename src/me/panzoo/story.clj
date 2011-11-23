@@ -21,6 +21,7 @@
 ; method. When run from the REPL or from Leiningen `gen-class` does nothing.
   (:gen-class))
 
+(declare encode-anchor)
 
 ;@top-level-vars
 ; ## Top level variables
@@ -457,7 +458,7 @@
 ; `*brushes*` is rebound on every invocation of `render-files`, because if it
 ; was not, unneeded brushes could accumulate and be included on subsequent
 ; calls to `render-files`.
-  (binding [*brushes* (atom (or (set *static-brushes*) #{})
+  (binding [*brushes* (atom (or (set (:static-brushes *settings*)) #{})
                             :validator #(not (some (comp not string?) %)))]
     (render-files- paths)))
 
@@ -486,7 +487,7 @@
 
 ; Here is a list of the options this program can take when run from the
 ; commandline.
-                 ["-c" "--comment" "Comment syntax" :default ";"]
+                 ["-c" "--comment" "Comment syntax"]
                  ["-b" "--brush" "SyntaxHighlighter brush file" :multi true]
                  ["-t" "--theme" "SyntaxHighlighter theme file"]
                  ["-l" "--language" "SyntaxHighlighter language"]
@@ -508,7 +509,7 @@
     (if (or (not (seq tail)) (:help amap))
       (do (println (str usage "\n" banner))
         (System/exit 1))
-      (binding [*settings* {:theme (:theme amap)
+      (binding [*settings* {:theme (or (:theme amap) (:theme *settings*))
                             :stylesheet (:stylesheet amap)
                             :static-brushes (:brush amap)
                             :verbose? (:verbose amap)}

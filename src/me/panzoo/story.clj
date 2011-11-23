@@ -163,6 +163,7 @@
    "scala" ["//" "shBrushScala.js"]
    "sql" ["--" "shBrushSql.js"]
    "vim" ["\"" "shBrushVimscript.js"]
+   "vimscript" ["\"" "shBrushVimscript.js"]
    "vb" ["'" "shBrushVb.js"]
    "vbnet" ["'" "shBrushVb.js"]
    ;"xml" "shBrushXml.js"

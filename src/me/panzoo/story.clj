@@ -56,7 +56,7 @@
       (java.io.InputStreamReader.)
       (slurp))
     (catch Exception e
-      (message "failed to read resource " resource-name)
+      (message "Failed to read resource " resource-name)
       (if continue-on-failure?
         (message "    continuing anyway...")
         (do (message "    aborting...")
@@ -68,7 +68,7 @@
   [path & continue-on-failure?]
   (try (slurp path)
     (catch java.io.FileNotFoundException _
-      (message path " not found; reading as a resource instead")
+      (message "Using internal " path)
       (slurp-resource path continue-on-failure?))))
 
 (defn encode-anchor [s]
@@ -293,7 +293,7 @@
 (defn maybe-associate-brush [path lang]
   (when-let [b (and lang (second (languages lang)))]
     (when-not (@*brushes* b)
-      (message path " associated with brush " b)
+      (message "Associating "path " with brush " b)
       (swap! *brushes* conj b))))
 
 ; The output of each file is wrapped in `article` or `section` tags. Article

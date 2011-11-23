@@ -10,6 +10,7 @@
     [clojure.string :as string]
     [clojure.tools.cli :as cli])
   (:import
+    [java.util.regex Pattern]
     [org.pegdown PegDownProcessor Extensions
 
 ; Internal links (to element ids) are nice to have. These imports will be used
@@ -91,7 +92,7 @@
 (defn comment
   "A regular expression matching the beginning of a commented line."
   []
-  (re-pattern (str "^\\Q" *single-comment* "\\E ?")))
+  (re-pattern (str "^" (Pattern/quote *single-comment*) " ?")))
 
 (defn anchor
   "A regular expression matching the beginning of an anchor line."

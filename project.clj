@@ -70,7 +70,7 @@
 ; example `fibonacci.js` is followed by the comment syntax and language name to
 ; use with SyntaxHighlighter. For a number of languages this information can be
 ; obtained from the file extension and the appropriate brush file pulled in
-; automatically; those languages are listed in the [[language map]].
+; automatically; those languages are listed in the [[Language map]].
 ;
 ;
 ; ### Build instructions
@@ -98,7 +98,7 @@
 ;
 ; If `output` is absent, the program's output is streamed to standard-out. For
 ; more detail run the program with the `--help` option or have a look at the
-; [[commandline]] section.
+; [[Commandline]] section.
 ;
 ; This HTML document (assuming you are not reading the source file) was created
 ; by the command: `java -jar story.jar project.clj index.html`.
@@ -108,9 +108,9 @@
 ;
 ; Call [`me.panzoo.story/process-files`](#process-files) with a list of file
 ; paths and an output stream or file-path. It may be necessary to set up
-; bindings for one or more of the dynamic variables described in the [top level
-; variables](#top-level-vars) section depending on whether the file suffixes
-; are in the [[language map]] or not.
+; bindings for one or more of the dynamic variables described in the [[Top
+; level variables]] section depending on whether the file suffixes are in the
+; [[Language map]] or not.
 ;
 ; The equivalent of the above commandline invocation is: `(process-files
 ; ["project.clj"] "index.html")`.

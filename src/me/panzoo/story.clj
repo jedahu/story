@@ -23,7 +23,6 @@
 
 (declare encode-anchor)
 
-;@top-level-vars
 ; ## Top level variables
 ;
 ; A few objects need to be accessed by a number of functions: regular
@@ -64,7 +63,6 @@
 (def ^:dynamic *brushes* nil)
 
 
-;@language map
 ; ### Language map
 ;
 ; Including SyntaxHighlighter brush files automatically based on file suffix or
@@ -184,6 +182,23 @@
 ; for use as an id or fragment identifier, and bind an output stream to `*out*`
 ; over a lexical scope.
 
+(defmacro cond-let
+  "Takes a binding-form and a set of test/expr pairs. Evaluates each test one
+  at a time. If a test returns logical true, cond-let evaluates and returns
+  expr with binding-form bound to the value of test and doesn't evaluate any of
+  the other tests or exprs. To provide a default value either provide a literal
+  that evaluates to logical true and is binding-compatible with binding-form,
+  or use :else as the test and don't refer to any parts of binding-form in the
+  expr. (cond-let binding-form) returns nil."
+  [bindings & clauses]
+  (let [binding (first bindings)]
+    (when-let [[test expr & more] clauses]
+      (if (= test :else)
+        expr
+        `(if-let [~binding ~test]
+           ~expr
+           (cond-let ~bindings ~@more))))))
+
 (defn message [& s]
   (when (:verbose? *settings*)
     (binding [*out* (io/writer System/err)]
@@ -221,7 +236,7 @@
       (slurp-resource path continue-on-failure?))))
 
 (defn encode-anchor [s]
-  (java.net.URLEncoder/encode (.replace s " " "-") "UTF-8"))
+  (java.net.URLEncoder/encode (.replaceAll s "\\s" "-") "UTF-8"))
 
 (defmacro with-out-stream [out & body]
   `(with-open [w# (io/writer ~out)]
@@ -241,6 +256,11 @@
   []
   (re-pattern (str (comment) "@ *")))
 
+(defn heading
+  "A regular expression matching the beginning of a heading line."
+  []
+  (re-pattern (str (comment) "#+ *")))
+
 (defn include
   "A regular expression matching the beginning of an include line."
   []
@@ -250,17 +270,22 @@
 ; ## Parsing
 ;
 ; Each line of a source file will be either code, comment, anchor, or include.
+; Headings are treated as both anchors and comments.
 (defn classify-line
   "Classify a line as :code or :comment. Return a pair of the classification
   and line string, sans leading comment tokens in the case of a comment."
   [line]
-  (if-let [s (re-find (include) line)]
-    [:include (string/split (.substring line (count s)) #"\s+")]
-    (if-let [s (re-find (anchor) line)]
-      [:anchor (.substring line (count s))]
-      (if-let [s (re-find (comment) line)]
-        [:comment (.substring line (count s))]
-        [:code line]))))
+  (letfn [(match? [reg] (re-find (reg) line))]
+    (concat
+      (cond-let [match]
+        (match? include) [[:include (string/split
+                                      (.substring line (count match)) #"\s+")]]
+        (match? anchor) [[:anchor (.substring line (count match))]]
+        (match? heading) [[:anchor (.substring line (count match))]
+                          [:comment (.substring
+                                      line (count (match? comment)))]]
+        (match? comment) [[:comment (.substring line (count match))]]
+        :else [[:code line]]))))
 
 ; Adjacent lines of the same classification need to be gathered together into
 ; a single string except for anchors and includes.
@@ -274,7 +299,7 @@
         (cons (first lines) (gather-lines- (rest lines)))))))
 
 (defn gather-lines [lines]
-  (gather-lines- (map classify-line lines)))
+  (gather-lines- (apply concat (map classify-line lines))))
 
 ; The result of gathering is a list of pairs of the form
 ; `[<classification> <data>]`.
@@ -474,8 +499,6 @@
     (render-files in-paths)))
 
 
-;@commandline
-;
 ; ## Commandline
 ;
 ; Use this program from the commandline like so.

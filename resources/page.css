@@ -5,6 +5,11 @@ pre
   text-align: left;
 }
 
+.code
+{
+  margin-top: 1em;
+}
+
 body
 {
   font-family: sans-serif;

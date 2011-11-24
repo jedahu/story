@@ -26,10 +26,14 @@
 ; ## Top level variables
 ;
 ; A few objects need to be accessed by a number of functions: regular
-; expressions that match the beginning of commented lines, SyntaxHighlighter
-; options, a PegDownProcessor, and a modified LinkRenderer.
-;
-;
+; expressions that match the beginning of lines, SyntaxHighlighter options, a
+; PegDownProcessor, and a modified LinkRenderer.
+
+(def clojure-form
+  "A regular expression matching the beginning of a clojure form."
+  #"^\(")
+
+
 ; ### Settings
 ;
 ; This dynamic variable is bound once in the commandline `-main` method and is
@@ -56,6 +60,10 @@
 (def ^:dynamic *language*
   "A language string for use with SyntaxHighlighter."
   "clojure")
+
+(def ^:dynamic *path*
+  "The path of the file currently being processed."
+  nil)
 
 ; Brushes can be added by the program whenever a new file is processed. They
 ; must be path strings. This variable is given a binding only in the
@@ -268,7 +276,36 @@
 
 
 ; ## Parsing
-;
+
+
+(defn lines-reader [lines]
+  (let [lines-left (atom (interpose "\n" (filter seq lines)))]
+    (java.io.PushbackReader.
+      (proxy [java.io.Reader] []
+        (close [])
+        (read
+
+; The clojure reader only calls the zero arity read method. Punting on
+; implementing the other arities for now.
+          ([]
+           (let [ll @lines-left
+                 line (first ll)
+                 c (first line)]
+             (reset! lines-left
+                     (if (seq (rest line))
+                       (cons (subs line 1) (rest ll))
+                       (rest ll)))
+             (if c (int c) -1))))))))
+
+(defn clojure-anchor? [lines]
+  (when (and (#{"clojure" "clj" "cljs"} *language*)
+             (re-find clojure-form (first lines)))
+    (with-open [r (lines-reader lines)]
+      (let [code (read r)]
+        (when-let [sym (and (re-find #"^def" (str (first code)))
+                            (second code))]
+          [[:anchor (str *path* "_" sym)]])))))
+
 ; Each line of a source file will be either code, comment, anchor, or include.
 ; Headings are treated as both anchors and comments.
 (defn classify-line
@@ -284,7 +321,7 @@
                         [:comment (.substring
                                     line (count (match? comment)))]]
       (match? comment) [[:comment (.substring line (count match))]]
-      :else [[:code line]])))
+      :else (conj (vec (clojure-anchor? lines)) [:code line]))))
 
 (defn classify-lines
   "Classify a line as :code or :comment. Return a pair of the classification
@@ -348,21 +385,22 @@
     (binding [*single-comment* (or token
                                    (first (languages *language*))
                                    *single-comment*)]
-      (wrap-in-tags tag
-        (if (#{"markdown" "md"} *language*)
+      (binding [*path* path]
+        (wrap-in-tags tag
+          (if (#{"markdown" "md"} *language*)
 
 ; A markdown file is a special case. It is treated as a single comment block.
-          (html<- [:comment (slurp path)])
-          (do
-            (maybe-associate-brush path *language*)
-            (with-open [r (io/reader path)]
+            (html<- [:comment (slurp path)])
+            (do
+              (maybe-associate-brush path *language*)
+              (with-open [r (io/reader path)]
 
 ; Lines of source code are read lazily by `line-seq` and gathered lazily by
 ; `gather-lines`, Along with printing each chunk of comment or code to an
 ; output stream, this ensures that the maximum memory used by this program will
 ; be determined by the largest comment or code chunk and not the total size of
 ; the source file.
-              (each html<- (gather-lines (line-seq r))))))))))
+                (each html<- (gather-lines (line-seq r)))))))))))
 
 ; Code chunks are wrapped in a `pre` with the correct incantation for
 ; SyntaxHighlighter in its `class` attribute; comments are run through the

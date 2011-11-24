@@ -272,20 +272,28 @@
 ; Each line of a source file will be either code, comment, anchor, or include.
 ; Headings are treated as both anchors and comments.
 (defn classify-line
+  ""
+  [[line :as lines]]
+  (letfn [(match? [reg] (re-find (reg) line))]
+    (cond-let
+      [match]
+      (match? include) [[:include (string/split
+                                    (.substring line (count match)) #"\s+")]]
+      (match? anchor) [[:anchor (.substring line (count match))]]
+      (match? heading) [[:anchor (.substring line (count match))]
+                        [:comment (.substring
+                                    line (count (match? comment)))]]
+      (match? comment) [[:comment (.substring line (count match))]]
+      :else [[:code line]])))
+
+(defn classify-lines
   "Classify a line as :code or :comment. Return a pair of the classification
   and line string, sans leading comment tokens in the case of a comment."
-  [line]
-  (letfn [(match? [reg] (re-find (reg) line))]
-    (concat
-      (cond-let [match]
-        (match? include) [[:include (string/split
-                                      (.substring line (count match)) #"\s+")]]
-        (match? anchor) [[:anchor (.substring line (count match))]]
-        (match? heading) [[:anchor (.substring line (count match))]
-                          [:comment (.substring
-                                      line (count (match? comment)))]]
-        (match? comment) [[:comment (.substring line (count match))]]
-        :else [[:code line]]))))
+  [lines]
+  (loop [lines lines acc []]
+    (if (seq lines)
+      (recur (rest lines) (conj acc (classify-line lines)))
+      (apply concat acc))))
 
 ; Adjacent lines of the same classification need to be gathered together into
 ; a single string except for anchors and includes.
@@ -299,7 +307,7 @@
         (cons (first lines) (gather-lines- (rest lines)))))))
 
 (defn gather-lines [lines]
-  (gather-lines- (apply concat (map classify-line lines))))
+  (gather-lines- (classify-lines lines)))
 
 ; The result of gathering is a list of pairs of the form
 ; `[<classification> <data>]`.

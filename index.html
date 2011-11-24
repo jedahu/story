@@ -2360,7 +2360,8 @@ return sh;
 typeof(exports) != 'undefined' ? exports.SyntaxHighlighter = SyntaxHighlighter : null;
  </script>
 <style> .syntaxhighlighter {
-  background-color: transparent !important;
+  background-color: #f5f5ff !important;
+  border: solid 1px #e5e5ee !important;
 }
 .syntaxhighlighter .line.alt1 {
   background-color: transparent !important;
@@ -2488,8 +2489,7 @@ typeof(exports) != 'undefined' ? exports.SyntaxHighlighter = SyntaxHighlighter :
 0;b<a.outline.sections.length;b++)d.append(a.outline.sections[b])}else if(m(a)&&g.length>0){e=g.pop();for(d=n(e.outline);d.sections.length>0;)d=n(d)}else if(l(a)||m(a))d=e.outline.sections[0]}},k=function(a){return a.tagName.toUpperCase()},p=function(a){return function(b){return z(b)&&(new RegExp(a,"i")).test(k(b))}},m=p("^BLOCKQUOTE|BODY|DETAILS|FIELDSET|FIGURE|TD$"),l=p("^ARTICLE|ASIDE|NAV|SECTION$"),h=p("^H[1-6]|HGROUP$"),z=function(a){return a&&a.tagName},j=function(a){var b=k(a);if(b=="HGROUP")for(b=
 1;b<=6;b++){if(a.getElementsByTagName("H"+b).length>0)return-b}else return-parseInt(b.substr(1))},n=function(a){return o(a.sections)},o=function(a){return a[a.length-1]};HTML5Outline=function(a){s=0;t=a.ownerDocument||window.document;d=e=null;g=[];w(a,x,y);return e!=null?e.outline:null}})();
  </script>
-<style> div.code,
-pre
+<style> pre
 {
   background-color: #f5f5ff;
   border: solid #e5e5ee 1px;
@@ -2574,25 +2574,28 @@ div#outline a
 }
  </style>
 <article>
+<a id='A-programming-story'></a>
 <h1>A programming story</h1><p>This is the story of a small program that parses source code. It converts comments into HTML (via <a href="http://daringfireball.net/projects/markdown/">Markdown</a>) and nicely highlights code (using <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a>).</p>
-<div class=code><pre class='brush: clj'> (defproject
+<pre class='brush: clj'>(defproject
   me.panzoo/story "0.0.2-SNAPSHOT"
 
   :description "A literate programming tool."
- </pre></div>
+</pre>
 <p>The program is written in the <a href="http://clojure.org">Clojure</a> language and uses the <a href="https://github.com/sirthias/pegdown">pegdown</a> implementation of Markdown with a number of its extensions <a href="#pegdown-extensions">enabled</a>.</p>
-<div class=code><pre class='brush: clj'>   :dependencies
+<pre class='brush: clj'>  :dependencies
   [[org.clojure/clojure "1.3.0"]
    [org.pegdown/pegdown "1.1.0"]
    ;[com.google.javascript/closure-compiler "r1592"]
- </pre></div>
+</pre>
 <p>A <a href="https://github.com/jedahu/tools.cli">modified</a> <code>org.clojure/tools.cli</code> is used (for repeated options). A pull request is <a href="https://github.com/clojure/tools.cli/pull/5">pending</a> for upstream inclusion.</p>
-<div class=code><pre class='brush: clj'>    [me.panzoo/tools.cli "0.2.2"]]
+<pre class='brush: clj'>   [me.panzoo/tools.cli "0.2.2"]]
   
   :main me.panzoo.story)
- </pre></div>
-<p>Check out the sources at <a href="https://github.com/jedahu/story">https://github.com/jedahu/story</a></p><h2>Synopsis</h2><p>To use this program you need to know four things: the single-line comment syntax of your source-code, Markdown, the story syntax for anchors, and the story syntax for includes.</p><p>Comment blocks that are flush with the left margin are parsed and rendered using Markdown. Anchors are comment lines whose content is &lsquo;<code>@&lt;anchor-id&gt;</code>&rsquo;. To include another source file add a comment line whose content is &lsquo;<code>%include &lt;file-path&gt;</code>&rsquo;.</p><p>By default this program is set up to process a Lisp like language with single semi-colon comment tokens. A small source example with anchors, includes, and wiki links might look like this:</p>
-<div class=code><pre class='brush: clojure'>
+</pre>
+<p>Check out the sources at <a href="https://github.com/jedahu/story">https://github.com/jedahu/story</a></p>
+<a id='Synopsis'></a>
+<h2>Synopsis</h2><p>To use this program you need to know four things: the single-line comment syntax of your source-code, Markdown, the story syntax for anchors, and the story syntax for includes.</p><p>Comment blocks that are flush with the left margin are parsed and rendered using Markdown. Anchors are comment lines whose content is &lsquo;<code>@&lt;anchor-id&gt;</code>&rsquo;. To include another source file add a comment line whose content is &lsquo;<code>%include &lt;file-path&gt;</code>&rsquo;.</p><p>By default this program is set up to process a Lisp like language with single semi-colon comment tokens. A small source example with anchors, includes, and wiki links might look like this:</p>
+<pre class='brush: clojure'>
 ; # My awesome program
 ;
 ; Introductory paragraph. Fast forward to the [[code]].
@@ -2607,16 +2610,24 @@ div#outline a
 
 ;%include fibonacci.clj
 ;%include fibonacci.js // javascript
-</pre></div><p>As you can see, files written in different languages can be included. In this example <code>fibonacci.js</code> is followed by the comment syntax and language name to use with SyntaxHighlighter. For a number of languages this information can be obtained from the file extension and the appropriate brush file pulled in automatically; those languages are listed in the <a href="#language-map">language map</a>.</p><h3>Build instructions</h3><p>To build <code>story.jar</code> make sure <a href="https://github.com/technomancy/leiningen">Leiningen</a> is installed and run the following commands in the story project directory:</p>
+</pre><p>As you can see, files written in different languages can be included. In this example <code>fibonacci.js</code> is followed by the comment syntax and language name to use with SyntaxHighlighter. For a number of languages this information can be obtained from the file extension and the appropriate brush file pulled in automatically; those languages are listed in the <a href="#Language-map">Language map</a>.</p>
+<a id='Build-instructions'></a>
+<h3>Build instructions</h3><p>To build <code>story.jar</code> make sure <a href="https://github.com/technomancy/leiningen">Leiningen</a> is installed and run the following commands in the story project directory:</p>
 <pre><code>lein deps
 lein uberjar
-</code></pre><p>If all goes well a file named something like <code>story-x.x.x-standalone.jar</code> will have magically appeared in the project directory. Rename it to <code>story.jar</code> if you like.</p><h3>Command line usage</h3>
+</code></pre><p>If all goes well a file named something like <code>story-x.x.x-standalone.jar</code> will have magically appeared in the project directory. Rename it to <code>story.jar</code> if you like.</p>
+<a id='Command-line-usage'></a>
+<h3>Command line usage</h3>
 <pre><code>java -jar story.jar input-files output
-</code></pre><p>If <code>output</code> is absent, the program&rsquo;s output is streamed to standard-out. For more detail run the program with the <code>--help</code> option or have a look at the <a href="#commandline">commandline</a> section.</p><p>This HTML document (assuming you are not reading the source file) was created by the command: <code>java -jar story.jar project.clj index.html</code>.</p><h3>Programmatic usage</h3><p>Call <a href="#process-files"><code>me.panzoo.story/process-files</code></a> with a list of file paths and an output stream or file-path. It may be necessary to set up bindings for one or more of the dynamic variables described in the <a href="#top-level-vars">top level variables</a> section depending on whether the file suffixes are in the <a href="#language-map">language map</a> or not.</p><p>The equivalent of the above commandline invocation is: <code>(process-files
+</code></pre><p>If <code>output</code> is absent, the program&rsquo;s output is streamed to standard-out. For more detail run the program with the <code>--help</code> option or have a look at the <a href="#Commandline">Commandline</a> section.</p><p>This HTML document (assuming you are not reading the source file) was created by the command: <code>java -jar story.jar project.clj index.html</code>.</p>
+<a id='Programmatic-usage'></a>
+<h3>Programmatic usage</h3><p>Call <a href="#process-files"><code>me.panzoo.story/process-files</code></a> with a list of file paths and an output stream or file-path. It may be necessary to set up bindings for one or more of the dynamic variables described in the <a href="#Top-level-variables">Top
+level variables</a> section depending on whether the file suffixes are in the <a href="#Language-map">Language map</a> or not.</p><p>The equivalent of the above commandline invocation is: <code>(process-files
 [&quot;project.clj&quot;] &quot;index.html&quot;)</code>.</p>
 <section>
+<a id='The-code'></a>
 <h1>The code</h1><p>The usual stuff comes first. This code needs to read and write to files, manipulate strings, and parse Markdown.</p>
-<div class=code><pre class='brush: clj'> (ns me.panzoo.story
+<pre class='brush: clj'>(ns me.panzoo.story
   (:refer-clojure :exclude [comment])
   (:require
     [clojure.java.io :as io]
@@ -2625,27 +2636,30 @@ lein uberjar
   (:import
     [java.util.regex Pattern]
     [org.pegdown PegDownProcessor Extensions
- </pre></div>
+</pre>
 <p>Internal links (to element ids) are nice to have. These imports will be used to create a modified LinkRenderer.</p>
-<div class=code><pre class='brush: clj'>      LinkRenderer LinkRenderer$Rendering]
+<pre class='brush: clj'>     LinkRenderer LinkRenderer$Rendering]
     [org.pegdown.ast WikiLinkNode])
- </pre></div>
+</pre>
 <p>To run from the commandline this namespace must be compiled with a <code>-main</code> method. When run from the REPL or from Leiningen <code>gen-class</code> does nothing.</p>
-<div class=code><pre class='brush: clj'>   (:gen-class))
+<pre class='brush: clj'>  (:gen-class))
 
 (declare encode-anchor)
- </pre></div>
-<a id='top-level-vars'></a>
-<h2>Top level variables</h2><p>A few objects need to be accessed by a number of functions: regular expressions that match the beginning of commented lines, SyntaxHighlighter options, a PegDownProcessor, and a modified LinkRenderer.</p><h3>Settings</h3><p>This dynamic variable is bound once in the commandline <code>-main</code> method and is never subsequently altered by the code in this namespace. The variable is bound to a map containing the following settings: which SyntaxHighlighter theme to use; which SyntaxHighlighter brushes to include to start with (other brushes may be added automatically by the program); what CSS file to include if any; and whether to log messages to std-err or not.</p>
-<div class=code><pre class='brush: clj'> (def ^:dynamic *settings*
+</pre>
+<a id='Top-level-variables'></a>
+<h2>Top level variables</h2><p>A few objects need to be accessed by a number of functions: regular expressions that match the beginning of commented lines, SyntaxHighlighter options, a PegDownProcessor, and a modified LinkRenderer.</p>
+<a id='Settings'></a>
+<h3>Settings</h3><p>This dynamic variable is bound once in the commandline <code>-main</code> method and is never subsequently altered by the code in this namespace. The variable is bound to a map containing the following settings: which SyntaxHighlighter theme to use; which SyntaxHighlighter brushes to include to start with (other brushes may be added automatically by the program); what CSS file to include if any; and whether to log messages to std-err or not.</p>
+<pre class='brush: clj'>(def ^:dynamic *settings*
   {:theme "shThemeEclipse.css"
    :static-brushes []
    :stylesheet nil
    :verbose? false})
 
- </pre></div>
+</pre>
+<a id='Per-file'></a>
 <h3>Per file</h3><p>These variables are rebound for every input file.</p>
-<div class=code><pre class='brush: clj'> 
+<pre class='brush: clj'>
 (def ^:dynamic *single-comment*
   "A string containing a single comment token."
   ";")
@@ -2653,14 +2667,14 @@ lein uberjar
 (def ^:dynamic *language*
   "A language string for use with SyntaxHighlighter."
   "clojure")
- </pre></div>
+</pre>
 <p>Brushes can be added by the program whenever a new file is processed. They must be path strings. This variable is given a binding only in the <code>[[render-files]]</code> function.</p>
-<div class=code><pre class='brush: clj'> (def ^:dynamic *brushes* nil)
+<pre class='brush: clj'>(def ^:dynamic *brushes* nil)
 
- </pre></div>
-<a id='language-map'></a>
+</pre>
+<a id='Language-map'></a>
 <h3>Language map</h3><p>Including SyntaxHighlighter brush files automatically based on file suffix or the language argument to an include directive is preferrable to explicitly listing brushes on the commandline or in a program that calls this one. Comment syntax is listed here too for the same reason.</p><p>Some languages are commented out because they either do not have comments or because they only have block comments. Their dull lifeless forms remind the maintainer of this program to do something about that.</p>
-<div class=code><pre class='brush: clj'> (def languages
+<pre class='brush: clj'>(def languages
   "A map of language names to a pairs of comment syntax and SyntaxHighlighter
   brush file names."
   {"clojure" [";" "shBrushClojure.js"]
@@ -2716,10 +2730,11 @@ lein uberjar
    ;"html" "shBrushXml.js"
    })
 
- </pre></div>
+</pre>
+<a id='Pegdown-instances'></a>
 <h3>Pegdown instances</h3><p>The same <a href="http://www.decodified.com/pegdown/api/org/pegdown/PegDownProcessor.html">pegdown processor</a> and <a href="http://www.decodified.com/pegdown/api/org/pegdown/LinkRenderer.html">link renderer</a> are used for each program execution.</p>
 <a id='pegdown-extensions'></a>
-<div class=code><pre class='brush: clj'> (def processor
+<pre class='brush: clj'>(def processor
   "A PegDownProcessor set up with the following extensions:
   AUTOLINKS
   SMARTYPANTS
@@ -2754,9 +2769,27 @@ lein uberjar
       ([node url title text]
        (proxy-super render node url title text)))))
 
- </pre></div>
+</pre>
+<a id='Utilities'></a>
 <h2>Utilities</h2><p>A few utility functions to make it easier to print messages to the console, iterate side-effects through a collection, access resources, encode a string for use as an id or fragment identifier, and bind an output stream to <code>*out*</code> over a lexical scope.</p>
-<div class=code><pre class='brush: clj'> 
+<pre class='brush: clj'>
+(defmacro cond-let
+  "Takes a binding-form and a set of test/expr pairs. Evaluates each test one
+  at a time. If a test returns logical true, cond-let evaluates and returns
+  expr with binding-form bound to the value of test and doesn't evaluate any of
+  the other tests or exprs. To provide a default value either provide a literal
+  that evaluates to logical true and is binding-compatible with binding-form,
+  or use :else as the test and don't refer to any parts of binding-form in the
+  expr. (cond-let binding-form) returns nil."
+  [bindings &amp; clauses]
+  (let [binding (first bindings)]
+    (when-let [[test expr &amp; more] clauses]
+      (if (= test :else)
+        expr
+        `(if-let [~binding ~test]
+           ~expr
+           (cond-let ~bindings ~@more))))))
+
 (defn message [&amp; s]
   (when (:verbose? *settings*)
     (binding [*out* (io/writer System/err)]
@@ -2794,16 +2827,17 @@ lein uberjar
       (slurp-resource path continue-on-failure?))))
 
 (defn encode-anchor [s]
-  (java.net.URLEncoder/encode (.replace s " " "-") "UTF-8"))
+  (java.net.URLEncoder/encode (.replaceAll s "\\s" "-") "UTF-8"))
 
 (defmacro with-out-stream [out &amp; body]
   `(with-open [w# (io/writer ~out)]
      (binding [*out* w#]
        ~@body)))
 
- </pre></div>
+</pre>
+<a id='Regular-expression-helpers'></a>
 <h3>Regular expression helpers</h3>
-<div class=code><pre class='brush: clj'> 
+<pre class='brush: clj'>
 (defn comment
   "A regular expression matching the beginning of a commented line."
   []
@@ -2814,27 +2848,37 @@ lein uberjar
   []
   (re-pattern (str (comment) "@ *")))
 
+(defn heading
+  "A regular expression matching the beginning of a heading line."
+  []
+  (re-pattern (str (comment) "#+ *")))
+
 (defn include
   "A regular expression matching the beginning of an include line."
   []
   (re-pattern (str (comment) "%include +")))
 
- </pre></div>
-<h2>Parsing</h2><p>Each line of a source file will be either code, comment, anchor, or include.</p>
-<div class=code><pre class='brush: clj'> (defn classify-line
+</pre>
+<a id='Parsing'></a>
+<h2>Parsing</h2><p>Each line of a source file will be either code, comment, anchor, or include. Headings are treated as both anchors and comments.</p>
+<pre class='brush: clj'>(defn classify-line
   "Classify a line as :code or :comment. Return a pair of the classification
   and line string, sans leading comment tokens in the case of a comment."
   [line]
-  (if-let [s (re-find (include) line)]
-    [:include (string/split (.substring line (count s)) #"\s+")]
-    (if-let [s (re-find (anchor) line)]
-      [:anchor (.substring line (count s))]
-      (if-let [s (re-find (comment) line)]
-        [:comment (.substring line (count s))]
-        [:code line]))))
- </pre></div>
+  (letfn [(match? [reg] (re-find (reg) line))]
+    (concat
+      (cond-let [match]
+        (match? include) [[:include (string/split
+                                      (.substring line (count match)) #"\s+")]]
+        (match? anchor) [[:anchor (.substring line (count match))]]
+        (match? heading) [[:anchor (.substring line (count match))]
+                          [:comment (.substring
+                                      line (count (match? comment)))]]
+        (match? comment) [[:comment (.substring line (count match))]]
+        :else [[:code line]]))))
+</pre>
 <p>Adjacent lines of the same classification need to be gathered together into a single string except for anchors and includes.</p>
-<div class=code><pre class='brush: clj'> (defn gather-lines- [lines]
+<pre class='brush: clj'>(defn gather-lines- [lines]
   (lazy-seq
     (when-let [classfn (first (first lines))]
       (if (#{:comment :code} classfn)
@@ -2844,29 +2888,31 @@ lein uberjar
         (cons (first lines) (gather-lines- (rest lines)))))))
 
 (defn gather-lines [lines]
-  (gather-lines- (map classify-line lines)))
- </pre></div>
-<p>The result of gathering is a list of pairs of the form <code>[&lt;classification&gt; &lt;data&gt;]</code>.</p><h2>Rendering</h2><p>The method that transforms each classified chunk into HTML, dispatches on the classification.</p>
-<div class=code><pre class='brush: clj'> (defmulti html&lt;- first)
- </pre></div>
+  (gather-lines- (apply concat (map classify-line lines))))
+</pre>
+<p>The result of gathering is a list of pairs of the form <code>[&lt;classification&gt; &lt;data&gt;]</code>.</p>
+<a id='Rendering'></a>
+<h2>Rendering</h2><p>The method that transforms each classified chunk into HTML, dispatches on the classification.</p>
+<pre class='brush: clj'>(defmulti html&lt;- first)
+</pre>
 <p>SyntaxHighlighter brushes are associated with files if the language is supplied or can be worked out from the file suffix.</p>
-<div class=code><pre class='brush: clj'> (defn maybe-associate-brush [path lang]
+<pre class='brush: clj'>(defn maybe-associate-brush [path lang]
   (when-let [b (and lang (second (languages lang)))]
     (when-not (@*brushes* b)
       (message "Associating "path " with brush " b)
       (swap! *brushes* conj b))))
- </pre></div>
+</pre>
 <p>The output of each file is wrapped in <code>article</code> or <code>section</code> tags. Article tags for top-level files and section tags for included ones.</p>
-<div class=code><pre class='brush: clj'> (defmacro wrap-in-tags [tag &amp; body]
+<pre class='brush: clj'>(defmacro wrap-in-tags [tag &amp; body]
   `(do
      (println (str "&lt;" ~tag "&gt;"))
      ~@body
      (println (str "&lt;/" ~tag "&gt;"))))
 
 (defn render-file [tag path &amp; [token lang]]
- </pre></div>
+</pre>
 <p>For each file, new bindings are made for comment syntax and language. If the language or comment syntax (<code>token</code>) are not supplied, they are guessed from the <code>path</code> suffix, and if that fails they are set to the values they have in the enclsing dynamic scope (i.e., from the commandline or the including file).</p>
-<div class=code><pre class='brush: clj'>   (binding [*language* (or lang
+<pre class='brush: clj'>  (binding [*language* (or lang
                            (re-find #"(?&lt;=\.)[^.]+$" path)
                            *language*)]
     (binding [*single-comment* (or token
@@ -2874,26 +2920,27 @@ lein uberjar
                                    *single-comment*)]
       (wrap-in-tags tag
         (if (#{"markdown" "md"} *language*)
- </pre></div>
+</pre>
 <p>A markdown file is a special case. It is treated as a single comment block.</p>
-<div class=code><pre class='brush: clj'>           (html&lt;- [:comment (slurp path)])
+<pre class='brush: clj'>          (html&lt;- [:comment (slurp path)])
           (do
             (maybe-associate-brush path *language*)
             (with-open [r (io/reader path)]
- </pre></div>
+</pre>
 <p>Lines of source code are read lazily by <code>line-seq</code> and gathered lazily by <code>gather-lines</code>, Along with printing each chunk of comment or code to an output stream, this ensures that the maximum memory used by this program will be determined by the largest comment or code chunk and not the total size of the source file.</p>
-<div class=code><pre class='brush: clj'>               (each html&lt;- (gather-lines (line-seq r))))))))))
- </pre></div>
+<pre class='brush: clj'>              (each html&lt;- (gather-lines (line-seq r))))))))))
+</pre>
 <p>Code chunks are wrapped in a <code>pre</code> with the correct incantation for SyntaxHighlighter in its <code>class</code> attribute; comments are run through the Markdown processor; anchors become hrefless HTML anchors; and includes wrap the result of parsing and rendering the file they point to in <code>section</code> tags.</p>
-<div class=code><pre class='brush: clj'> (defmethod html&lt;- :code [[_ text]]
+<pre class='brush: clj'>
+(defmethod html&lt;- :code [[_ text]]
   (when-not (string/blank? text)
-    (println (str "&lt;div class=code&gt;&lt;pre class='brush: " *language* "'&gt;")
-             (string/escape
-               text
-               {\&lt; "&amp;lt;"
-                \&gt; "&amp;gt;"
-                \&amp; "&amp;amp;"})
-             "&lt;/pre&gt;&lt;/div&gt;")))
+    (println (str "&lt;pre class='brush: " *language* "'&gt;"
+                  (string/escape
+                    text
+                    {\&lt; "&amp;lt;"
+                     \&gt; "&amp;gt;"
+                     \&amp; "&amp;amp;"})
+                  "&lt;/pre&gt;"))))
 
 (defmethod html&lt;- :comment [[_ text]]
   (println (.markdownToHtml processor text link-renderer)))
@@ -2905,17 +2952,18 @@ lein uberjar
   (let [lang (or lang (re-find #"(?&lt;=\.)[^.]+$" path))]
     (render-file "section" path token lang)))
 
- </pre></div>
+</pre>
+<a id='Look-and-feel'></a>
 <h2>Look and feel</h2><p>All javascript and CSS are inlined in the output.</p>
-<div class=code><pre class='brush: clj'> 
+<pre class='brush: clj'>
 (defn inline-js [s]
   (println "&lt;script&gt;" s "&lt;/script&gt;"))
 
 (defn inline-css [s]
   (println "&lt;style&gt;" s "&lt;/style&gt;"))
- </pre></div>
+</pre>
 <p>SyntaxHighlighter brushes can be set and the default theme (<code>shThemeEclipse.css</code>) overridden on the commandline. An additional stylesheet can also be set.</p><p>Because lack of brush or theme will not materially affect the structure of the output page, failure to load one or more of them will not cause the program to halt, though it will be logged to standard-error.</p>
-<div class=code><pre class='brush: clj'> 
+<pre class='brush: clj'>
 (defn inline-brushes []
   (message "Adding the following brushes to output:")
   (each (partial message "    ") @*brushes*)
@@ -2937,27 +2985,28 @@ lein uberjar
                       (:stylesheet *settings*)
                       :continue-on-failure))]
     (inline-css s)))
- </pre></div>
+</pre>
 <p>The resulting look-and-feel resources are included together.</p>
-<div class=code><pre class='brush: clj'> (defn look-and-feel []
+<pre class='brush: clj'>(defn look-and-feel []
   (inline-js (slurp-resource "XRegExp.js"))
   (inline-js (slurp-resource "shCore.js"))
   (inline-theme)
   (inline-js (slurp-resource "outliner.0.5.0.62.js"))
   (inline-css (slurp-resource "page.css"))
   (inline-stylesheet))
- </pre></div>
+</pre>
 <p>SyntaxHighlighter&rsquo;s defaults are not suitable, so they are tweaked.</p>
-<div class=code><pre class='brush: clj'> (defn syntax-highlighter-setup []
+<pre class='brush: clj'>(defn syntax-highlighter-setup []
   (inline-js
     (str "SyntaxHighlighter.defaults['toolbar'] = false;"
          "SyntaxHighlighter.defaults['smart-tabs'] = false;"
          "SyntaxHighlighter.defaults['gutter'] = false;"
          "SyntaxHighlighter.defaults['unindent'] = false;"
+         "SyntaxHighlighter.defaults['class-name'] = 'code';"
          "SyntaxHighlighter.all();")))
- </pre></div>
+</pre>
 <p><a href="http://code.google.com/p/h5o/">h50</a>, the HTML5 outliner is used to create a table of contents.</p>
-<div class=code><pre class='brush: clj'> (defn outliner-setup []
+<pre class='brush: clj'>(defn outliner-setup []
   (println "&lt;div id=outline&gt;&lt;/div&gt;")
   (inline-js
     (str "var outline = document.getElementById('outline');"
@@ -2967,53 +3016,54 @@ lein uberjar
          "for (var i = 1; i &lt; children.length; ++i) {"
          "  outline.appendChild(children[i]);"
          "}")))
- </pre></div>
+</pre>
 <p>And here the two scripts are combined.</p>
-<div class=code><pre class='brush: clj'> (defn javascript-setup []
+<pre class='brush: clj'>(defn javascript-setup []
   (syntax-highlighter-setup)
   (outliner-setup))
     
- </pre></div>
+</pre>
+<a id='Output'></a>
 <h2>Output</h2><p>The output is HTML5 which is why no <code>html</code>, <code>head</code>, or <code>body</code> tags are present. The order of things in the output file is fairly normal for HTML: style and behaviour information first, followed by visible content, followed by the javascript entry-point.</p>
-<div class=code><pre class='brush: clj'> (defn render-files- [paths]
+<pre class='brush: clj'>(defn render-files- [paths]
   (println
     "&lt;!doctype html&gt;"
     "&lt;meta charset=utf-8&gt;")
   (look-and-feel)
- </pre></div>
+</pre>
 <p>Multiple input files are rendered to a single stream. The content of each file&rsquo;s rendering is wrapped in its own <code>article</code> tags.</p>
-<div class=code><pre class='brush: clj'>   (each (partial render-file "article") paths)
+<pre class='brush: clj'>  (each (partial render-file "article") paths)
   (inline-brushes)
   (javascript-setup))
- </pre></div>
+</pre>
 <a id='render-files'></a>
-<div class=code><pre class='brush: clj'> (defn render-files [paths]
- </pre></div>
+<pre class='brush: clj'>(defn render-files [paths]
+</pre>
 <p><code>*brushes*</code> is rebound on every invocation of <code>render-files</code>, because if it was not, unneeded brushes could accumulate and be included on subsequent calls to <code>render-files</code>.</p>
-<div class=code><pre class='brush: clj'>   (binding [*brushes* (atom (or (set (:static-brushes *settings*)) #{})
+<pre class='brush: clj'>  (binding [*brushes* (atom (or (set (:static-brushes *settings*)) #{})
                             :validator #(not (some (comp not string?) %)))]
     (render-files- paths)))
- </pre></div>
+</pre>
 <p>The output stream can be a file or standard output or anything <code>clojure.java.io/writer</code> can handle.</p>
 <a id='process-files'></a>
-<div class=code><pre class='brush: clj'> (defn process-files
+<pre class='brush: clj'>(defn process-files
   "Take a list of file paths and an output stream, and render each file to the
   stream as HTML."
   [in-paths out]
   (with-out-stream out
     (render-files in-paths)))
 
- </pre></div>
-<a id='commandline'></a>
+</pre>
+<a id='Commandline'></a>
 <h2>Commandline</h2><p>Use this program from the commandline like so.</p>
-<div class=code><pre class='brush: clj'> (def usage "Usage: java -jar story.jar [options] &lt;input-files&gt;")
+<pre class='brush: clj'>(def usage "Usage: java -jar story.jar [options] &lt;input-files&gt;")
 
 (defn -main [&amp; args]
   (let [[amap tail banner]
         (cli/cli args
- </pre></div>
+</pre>
 <p>Here is a list of the options this program can take when run from the commandline.</p>
-<div class=code><pre class='brush: clj'>                  ["-c" "--comment" "Comment syntax"]
+<pre class='brush: clj'>                 ["-c" "--comment" "Comment syntax"]
                  ["-b" "--brush" "SyntaxHighlighter brush file" :multi true]
                  ["-t" "--theme" "SyntaxHighlighter theme file"]
                  ["-l" "--language" "SyntaxHighlighter language"]
@@ -3021,9 +3071,9 @@ lein uberjar
                  ["-v" "--verbose" "Turn on verbose output"
                   :default false :flag true]
                  ["-h" "--help" "Show this help" :default false :flag true])]
- </pre></div>
+</pre>
 <p>For the brush, theme, and stylesheet options the program first tries to read from the filesystem and if that fails because the file is not found then an attempt is made to read from the program&rsquo;s resources. The resources contain the standard SyntaxHighlighter brushes and themes under their normal file names including an additional <code>shBrushClojure.js</code> and <code>shThemeClojure.css</code>.</p><p>Multiple brushes can be used by repeating the <code>-b</code> or <code>--brush</code> options. Additional brushes may be added by the program as a result of file includes and file suffixes.</p>
-<div class=code><pre class='brush: clj'>     (if (or (not (seq tail)) (:help amap))
+<pre class='brush: clj'>    (if (or (not (seq tail)) (:help amap))
       (do (println (str usage "\n" banner))
         (System/exit 1))
       (binding [*settings* {:theme (or (:theme amap) (:theme *settings*))
@@ -3032,15 +3082,16 @@ lein uberjar
                             :verbose? (:verbose amap)}
                 *single-comment* (:comment amap)
                 *language* (or (:language amap) *language*)]
- </pre></div>
+</pre>
 <p>When no output file is given, the program renders to standard-out.</p>
-<div class=code><pre class='brush: clj'>         (if (= 1 (count tail))
+<pre class='brush: clj'>        (if (= 1 (count tail))
           (process-files tail *out*)
-          (process-files (butlast tail) (last tail))))))) </pre></div>
+          (process-files (butlast tail) (last tail)))))))</pre>
 </section>
 <section>
+<a id='Code-folding-for-Vim'></a>
 <h1>Code folding for Vim</h1><p>Add this code to your <code>~/.vimrc</code> to enable folding of Markdown files and source files with Markdown comments.</p><p>The fold level is determined by the number of <code>#</code> at the start of each heading. Underlined headings are not supported.</p>
-<div class=code><pre class='brush: vim'> function! MarkdownLevel(token)
+<pre class='brush: vim'>function! MarkdownLevel(token)
   let level = strlen(matchstr(getline(v:lnum),
         \                     '\(^'.a:token.'\)\@&lt;=#\+\( \)\@='))
   if level == 0
@@ -3049,24 +3100,25 @@ lein uberjar
     return "&gt;".level
   endif
 endfunction
- </pre></div>
+</pre>
 <p>Different comment tokens are supported.</p>
-<div class=code><pre class='brush: vim'> let g:comment#none = ''
+<pre class='brush: vim'>let g:comment#none = ''
 let g:comment#semi = '; '
 let g:comment#slashes = '// '
 let g:comment#hash = '# '
 let g:comment#dblquote = '" '
 
 au BufEnter *.md,*.clj,*.cljs,*.js,*.sh setlocal foldmethod=expr
- </pre></div>
+</pre>
 <p>I don&rsquo;t know why passing a string literal to <code>MarkdownLevel</code> doesn&rsquo;t work here. Vimscript is not my forte.</p>
-<div class=code><pre class='brush: vim'> au BufEnter *.md setlocal foldexpr=MarkdownLevel(comment#none)
+<pre class='brush: vim'>au BufEnter *.md setlocal foldexpr=MarkdownLevel(comment#none)
 au BufEnter *.clj,*.cljs setlocal foldexpr=MarkdownLevel(comment#semi)
 au BufEnter *.js setlocal foldexpr=MarkdownLevel(comment#slashes)
 au BufEnter *.sh setlocal foldexpr=MarkdownLevel(comment#hash)
 au BufEnter *.vim setlocal foldexpr=MarkdownLevel(comment#dblquote)
 
- </pre></div>
+</pre>
+<a id='Key-bindings'></a>
 <h2>Key bindings</h2><p><code>za</code> toggle current fold<br/><code>zR</code> open all folds<br/><code>zM</code> close all folds<br/><code>zr</code> open one more level of folds<br/><code>zm</code> close one more level of folds </p>
 </section>
 </article>
@@ -4081,6 +4133,6 @@ net.brehaut.ClojureTools = (function (SH) {
   };
 })(SyntaxHighlighter);
  </script>
-<script> SyntaxHighlighter.defaults['toolbar'] = false;SyntaxHighlighter.defaults['smart-tabs'] = false;SyntaxHighlighter.defaults['gutter'] = false;SyntaxHighlighter.defaults['unindent'] = false;SyntaxHighlighter.all(); </script>
+<script> SyntaxHighlighter.defaults['toolbar'] = false;SyntaxHighlighter.defaults['smart-tabs'] = false;SyntaxHighlighter.defaults['gutter'] = false;SyntaxHighlighter.defaults['unindent'] = false;SyntaxHighlighter.defaults['class-name'] = 'code';SyntaxHighlighter.all(); </script>
 <div id=outline></div>
 <script> var outline = document.getElementById('outline');outline.innerHTML = HTML5Outline(document.body).asHTML(true);var children = outline.firstElementChild.firstElementChild.children;outline.removeChild(outline.firstElementChild);for (var i = 1; i < children.length; ++i) {  outline.appendChild(children[i]);} </script>

@@ -29,10 +29,6 @@
 ; expressions that match the beginning of lines, SyntaxHighlighter options, a
 ; PegDownProcessor, and a modified LinkRenderer.
 
-(def clojure-form
-  "A regular expression matching the beginning of a clojure form."
-  #"^\(")
-
 
 ; ### Settings
 ;
@@ -59,7 +55,7 @@
 
 (def ^:dynamic *language*
   "A language string for use with SyntaxHighlighter."
-  "clojure")
+  :clojure)
 
 (def ^:dynamic *path*
   "The path of the file currently being processed."
@@ -84,58 +80,69 @@
 (def languages
   "A map of language names to a pairs of comment syntax and SyntaxHighlighter
   brush file names."
-  {"clojure" [";" "shBrushClojure.js"]
-   "clj" [";" "shBrushClojure.js"]
-   "cljs" [";" "shBrushClojure.js"]
-   "applescript" ["--" "shBrushAppleScript.js"]
-   "actionscript3" ["//" "shBrushAS3.js"]
-   "as3" ["//" "shBrushAS3.js"]
-   "bash" ["#" "shBrushBash.js"]
-   "shell" ["#" "shBrushBash.js"]
-   "sh" ["#" "shBrushBash.js"]
-   ;"coldfusion" "shBrushColdFusion.js"
-   "cpp" ["//" "shBrushCpp.js"]
-   "c++" ["//" "shBrushCpp.js"]
-   "cxx" ["//" "shBrushCpp.js"]
-   "c" ["//" "shBrushCpp.js"]
-   "c#" ["//" "shBrushCSharp.js"]
-   "c-sharp" ["//" "shBrushCSharp.js"]
-   "csharp" ["//" "shBrushCSharp.js"]
-   "delphi" ["//" "shBrushDelphi.js"]
-   "pascal" ["//" "shBrushDelphi.js"]
-   ;"diff" "shBrushDiff.js"
-   ;"patch" "shBrushDiff.js"
-   "erlang" ["%" "shBrushErlang.js"]
-   "erl" ["%" "shBrushErlang.js"]
-   "groovy" ["//" "shBrushGroovy.js"]
-   "java" ["//" "shBrushJava.js"]
-   "javafx" ["//" "shBrushJavaFX.js"]
-   "jfx" ["//" "shBrushJavaFX.js"]
-   "javascript" ["//" "shBrushJScript.js"]
-   "js" ["//" "shBrushJScript.js"]
-   "perl" ["#" "shBrushPerl.js"]
-   "pl" ["#" "shBrushPerl.js"]
-   "php" ["#" "shBrushPhp.js"]
-   ;"text" "shBrushPlain.js"
-   ;"txt" "shBrushPlain.js"
-   ;"plain" "shBrushPlain.js"
-   "python" ["#" "shBrushPython.js"]
-   "py" ["#" "shBrushPython.js"]
-   "ruby" ["#" "shBrushRuby.js"]
-   "rb" ["#" "shBrushRuby.js"]
-   "sass" ["//" "shBrushSass.js"]
-   "scss" ["//" "shBrushSass.js"]
-   "scala" ["//" "shBrushScala.js"]
-   "sql" ["--" "shBrushSql.js"]
-   "vim" ["\"" "shBrushVimscript.js"]
-   "vimscript" ["\"" "shBrushVimscript.js"]
-   "vb" ["'" "shBrushVb.js"]
-   "vbnet" ["'" "shBrushVb.js"]
-   ;"xml" "shBrushXml.js"
-   ;"xhtml" "shBrushXml.js"
-   ;"xslt" "shBrushXml.js"
-   ;"html" "shBrushXml.js"
+  {:clojure [";" "shBrushClojure.js"]
+   :clj [";" "shBrushClojure.js"]
+   :cljs [";" "shBrushClojure.js"]
+   :applescript ["--" "shBrushAppleScript.js"]
+   :actionscript3 ["//" "shBrushAS3.js"]
+   :as3 ["//" "shBrushAS3.js"]
+   :bash ["#" "shBrushBash.js"]
+   :shell ["#" "shBrushBash.js"]
+   :sh ["#" "shBrushBash.js"]
+   :cpp ["//" "shBrushCpp.js"]
+   :c++ ["//" "shBrushCpp.js"]
+   :cxx ["//" "shBrushCpp.js"]
+   :c ["//" "shBrushCpp.js"]
+   :c# ["//" "shBrushCSharp.js"]
+   :c-sharp ["//" "shBrushCSharp.js"]
+   :csharp ["//" "shBrushCSharp.js"]
+   :delphi ["//" "shBrushDelphi.js"]
+   :pascal ["//" "shBrushDelphi.js"]
+   :erlang ["%" "shBrushErlang.js"]
+   :erl ["%" "shBrushErlang.js"]
+   :groovy ["//" "shBrushGroovy.js"]
+   :java ["//" "shBrushJava.js"]
+   :javafx ["//" "shBrushJavaFX.js"]
+   :jfx ["//" "shBrushJavaFX.js"]
+   :javascript ["//" "shBrushJScript.js"]
+   :js ["//" "shBrushJScript.js"]
+   :perl ["#" "shBrushPerl.js"]
+   :pl ["#" "shBrushPerl.js"]
+   :php ["#" "shBrushPhp.js"]
+   :python ["#" "shBrushPython.js"]
+   :py ["#" "shBrushPython.js"]
+   :ruby ["#" "shBrushRuby.js"]
+   :rb ["#" "shBrushRuby.js"]
+   :sass ["//" "shBrushSass.js"]
+   :scss ["//" "shBrushSass.js"]
+   :scala ["//" "shBrushScala.js"]
+   :sql ["--" "shBrushSql.js"]
+   :vim ["\"" "shBrushVimscript.js"]
+   :vimscript ["\"" "shBrushVimscript.js"]
+   :vb ["'" "shBrushVb.js"]
+   :vbnet ["'" "shBrushVb.js"]
    })
+
+(def language-aliases
+  "A map of aliases to canonical language names."
+  {:clj :clojure
+   :cljs :clojure
+   :sh :bash
+   :shell :bash
+   :c :cpp
+   :c++ :cpp
+   :cxx :cpp
+   :c# :csharp
+   :c-sharp :csharp
+   :erl :erlang
+   :jfx :javafx
+   :js :javascript
+   :pl :perl
+   :py :python
+   :rb :ruby
+   :sass :scss
+   :vimscript :vim
+   :vbnet :vb})
 
 
 ; ### Pegdown instances
@@ -251,6 +258,23 @@
      (binding [*out* w#]
        ~@body)))
 
+(defn canonical-lang
+  [l]
+  (let [k (keyword l)]
+    (get language-aliases k k)))
+
+(defn lang-info
+  [l]
+  (languages (canonical-lang l)))
+
+(defn lang-comment
+  [l]
+  (first (lang-info l)))
+
+(defn lang-brush
+  [l]
+  (second (lang-info l)))
+
 
 ; ### Regular expression helpers
 
@@ -297,14 +321,23 @@
                        (rest ll)))
              (if c (int c) -1))))))))
 
-(defn clojure-anchor? [lines]
-  (when (and (#{"clojure" "clj" "cljs"} *language*)
-             (re-find clojure-form (first lines)))
-    (with-open [r (lines-reader lines)]
-      (let [code (read r)]
-        (when-let [sym (and (re-find #"^def" (str (first code)))
-                            (second code))]
-          [[:anchor (str *path* "_" sym)]])))))
+(defmulti code-anchor-id (fn [_ _] *language*) :default :default)
+
+(defmethod code-anchor-id :clojure [line reader]
+  (when (re-find #"^\(" line)
+    (let [code (read reader)]
+      (and (re-find #"^def" (str (first code)))
+           (second code)))))
+
+(defmethod code-anchor-id :vim [line reader]
+  (second (re-find #"^function!?\s+([a-zA-Z_][a-zA-Z_0-9]+)" line)))
+
+(defmethod code-anchor-id :default [_ _] nil)
+
+(defn maybe-code-anchor [line reader]
+  (if-let [id (code-anchor-id line reader)]
+    [[:anchor (str *path* "/" id)]]
+    []))
 
 ; Each line of a source file will be either code, comment, anchor, or include.
 ; Headings are treated as both anchors and comments.
@@ -321,7 +354,8 @@
                         [:comment (.substring
                                     line (count (match? comment)))]]
       (match? comment) [[:comment (.substring line (count match))]]
-      :else (conj (vec (clojure-anchor? lines)) [:code line]))))
+      :else (conj (maybe-code-anchor line (lines-reader lines))
+                  [:code line]))))
 
 (defn classify-lines
   "Classify a line as :code or :comment. Return a pair of the classification
@@ -359,7 +393,7 @@
 ; SyntaxHighlighter brushes are associated with files if the language is
 ; supplied or can be worked out from the file suffix.
 (defn maybe-associate-brush [path lang]
-  (when-let [b (and lang (second (languages lang)))]
+  (when-let [b (and lang (lang-brush lang))]
     (when-not (@*brushes* b)
       (message "Associating "path " with brush " b)
       (swap! *brushes* conj b))))
@@ -379,15 +413,16 @@
 ; from the `path` suffix, and if that fails they are set to the values they
 ; have in the enclsing dynamic scope (i.e., from the commandline or the
 ; including file).
-  (binding [*language* (or lang
-                           (re-find #"(?<=\.)[^.]+$" path)
-                           *language*)]
+  (binding [*language* (canonical-lang
+                         (or lang
+                             (re-find #"(?<=\.)[^.]+$" path)
+                             *language*))]
     (binding [*single-comment* (or token
-                                   (first (languages *language*))
+                                   (lang-comment *language*)
                                    *single-comment*)]
       (binding [*path* path]
         (wrap-in-tags tag
-          (if (#{"markdown" "md"} *language*)
+          (if (#{:markdown :md} *language*)
 
 ; A markdown file is a special case. It is treated as a single comment block.
             (html<- [:comment (slurp path)])
@@ -409,7 +444,7 @@
 
 (defmethod html<- :code [[_ text]]
   (when-not (string/blank? text)
-    (println (str "<pre class='brush: " *language* "'>"
+    (println (str "<pre class='brush: " (name *language*) "'>"
                   (string/escape
                     text
                     {\< "&lt;"
@@ -584,7 +619,7 @@
                             :static-brushes (:brush amap)
                             :verbose? (:verbose amap)}
                 *single-comment* (:comment amap)
-                *language* (or (:language amap) *language*)]
+                *language* (canonical-lang (or (:language amap) *language*))]
 
 ; When no output file is given, the program renders to standard-out.
         (if (= 1 (count tail))

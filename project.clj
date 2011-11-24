@@ -49,7 +49,7 @@
 ; semi-colon comment tokens. A small source example with anchors, includes,
 ; and wiki links might look like this:
 ;
-; <div class=code><pre class='brush: clojure'>
+; <pre class='brush: clojure'>
 ; ; # My awesome program
 ; ;
 ; ; Introductory paragraph. Fast forward to the [[code]].
@@ -64,7 +64,7 @@
 ;
 ; ;%include fibonacci.clj
 ; ;%include fibonacci.js // javascript
-; </pre></div>
+; </pre>
 ;
 ; As you can see, files written in different languages can be included. In this
 ; example `fibonacci.js` is followed by the comment syntax and language name to

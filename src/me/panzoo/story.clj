@@ -438,6 +438,7 @@
          "SyntaxHighlighter.defaults['smart-tabs'] = false;"
          "SyntaxHighlighter.defaults['gutter'] = false;"
          "SyntaxHighlighter.defaults['unindent'] = false;"
+         "SyntaxHighlighter.defaults['class-name'] = 'code';"
          "SyntaxHighlighter.all();")))
 
 ; [h50](http://code.google.com/p/h5o/), the HTML5 outliner is used to create

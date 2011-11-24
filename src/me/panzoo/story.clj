@@ -335,16 +335,16 @@
 ; SyntaxHighlighter in its `class` attribute; comments are run through the
 ; Markdown processor; anchors become hrefless HTML anchors; and includes wrap
 ; the result of parsing and rendering the file they point to in `section` tags.
-;
+
 (defmethod html<- :code [[_ text]]
   (when-not (string/blank? text)
-    (println (str "<div class=code><pre class='brush: " *language* "'>")
-             (string/escape
-               text
-               {\< "&lt;"
-                \> "&gt;"
-                \& "&amp;"})
-             "</pre></div>")))
+    (println (str "<pre class='brush: " *language* "'>"
+                  (string/escape
+                    text
+                    {\< "&lt;"
+                     \> "&gt;"
+                     \& "&amp;"})
+                  "</pre>"))))
 
 (defmethod html<- :comment [[_ text]]
   (println (.markdownToHtml processor text link-renderer)))

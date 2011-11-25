@@ -2631,7 +2631,7 @@ div#outline > ol > li > a:visited
 <h1>A programming story</h1><p>This is the story of a small program that parses source code. It converts comments into HTML (via <a href="http://daringfireball.net/projects/markdown/">Markdown</a>) and nicely highlights code (using <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a>).</p>
 <a id='project.clj/story'></a>
 <pre class='brush: clojure'>(defproject
-  me.panzoo/story "0.0.2"
+  me.panzoo/story "0.0.3-SNAPSHOT"
 
   :description "A literate programming tool."
 </pre>
@@ -2746,7 +2746,7 @@ lein uberjar
 
 </pre>
 <a id='src/me/panzoo/story.clj/Language-map'></a>
-<h3>Language map</h3><p>Including SyntaxHighlighter brush files automatically based on file suffix or the language argument to an include directive is preferrable to explicitly listing brushes on the commandline or in a program that calls this one. Comment syntax is listed here too for the same reason.</p><p>Some languages are commented out because they either do not have comments or because they only have block comments. Their dull lifeless forms remind the maintainer of this program to do something about that.</p><p>Don&rsquo;t use <code>languages</code> and <code>language-aliases</code> directly. Use <a href="#src/me/panzoo/story.clj/lang-info">lang-info</a>, <a href="#src/me/panzoo/story.clj/lang-brush">lang-brush</a>, and <a href="#src/me/panzoo/story.clj/lang-comment">lang-comment</a> instead. Those three functions route their input through <a href="#src/me/panzoo/story.clj/canonical-lang">canonical-lang</a> which resolves any aliases to their canonical equivalent.</p>
+<h3>Language map</h3><p>Including SyntaxHighlighter brush files automatically based on file suffix or the language argument to an include directive is preferrable to explicitly listing brushes on the commandline or in a program that calls this one. Comment syntax is listed here too for the same reason.</p><p>Don&rsquo;t use <code>languages</code> and <code>language-aliases</code> directly. Use <a href="#src/me/panzoo/story.clj/lang-info">lang-info</a>, <a href="#src/me/panzoo/story.clj/lang-brush">lang-brush</a>, and <a href="#src/me/panzoo/story.clj/lang-comment">lang-comment</a> instead. Those three functions route their input through <a href="#src/me/panzoo/story.clj/canonical-lang">canonical-lang</a> which resolves any aliases to their canonical equivalent.</p>
 <a id='src/me/panzoo/story.clj/languages'></a>
 <pre class='brush: clojure'>(def languages
   "A map of language names to a pairs of comment syntax and SyntaxHighlighter
@@ -3378,6 +3378,9 @@ lein uberjar
     outline.appendChild(children[i]);
   }
   document.body.appendChild(outline);
+
+  var h1s = document.getElementsByTagName('h1');
+  if (h1s.length &gt; 0) document.title = h1s[0].innerText;
 }
 
 me_panzoo_story_setup();</pre>
@@ -4486,6 +4489,9 @@ function me_panzoo_story_setup() {
     outline.appendChild(children[i]);
   }
   document.body.appendChild(outline);
+
+  var h1s = document.getElementsByTagName('h1');
+  if (h1s.length > 0) document.title = h1s[0].innerText;
 }
 
 me_panzoo_story_setup();

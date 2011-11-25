@@ -23,6 +23,9 @@ function me_panzoo_story_setup() {
     outline.appendChild(children[i]);
   }
   document.body.appendChild(outline);
+
+  var h1s = document.getElementsByTagName('h1');
+  if (h1s.length > 0) document.title = h1s[0].innerText;
 }
 
 me_panzoo_story_setup();

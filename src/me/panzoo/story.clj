@@ -107,10 +107,6 @@
 ; listing brushes on the commandline or in a program that calls this one.
 ; Comment syntax is listed here too for the same reason.
 ;
-; Some languages are commented out because they either do not have comments or
-; because they only have block comments. Their dull lifeless forms remind the
-; maintainer of this program to do something about that.
-;
 ; Don't use `languages` and `language-aliases` directly. Use [[lang-info]],
 ; [[lang-brush]], and [[lang-comment]] instead. Those three functions route
 ; their input through [[canonical-lang]] which resolves any aliases to their

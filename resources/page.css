@@ -24,6 +24,13 @@ h1, h2, h3, h4, h5, h6
   color: #535388;
 }
 
+a,
+a:hover
+{
+  text-decoration: none;
+  color: #535388;
+}
+
 article
 {
   margin: 0;

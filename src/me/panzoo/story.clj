@@ -46,7 +46,9 @@
 ; method. When run from the REPL or from Leiningen `gen-class` does nothing.
   (:gen-class))
 
-(declare encode-anchor)
+; A few of the top level variables use these utility functions.
+
+(declare normalize-anchor)
 (declare html-escape)
 
 ; ## Top level variables
@@ -108,14 +110,17 @@
 ; Some languages are commented out because they either do not have comments or
 ; because they only have block comments. Their dull lifeless forms remind the
 ; maintainer of this program to do something about that.
+;
+; Don't use `languages` and `language-aliases` directly. Use [[lang-info]],
+; [[lang-brush]], and [[lang-comment]] instead. Those three functions route
+; their input through [[canonical-lang]] which resolves any aliases to their
+; canonical equivalent.
+
 (def languages
   "A map of language names to a pairs of comment syntax and SyntaxHighlighter
   brush file names."
   {:clojure [";" "shBrushClojure.js"]
-   :clj [";" "shBrushClojure.js"]
-   :cljs [";" "shBrushClojure.js"]
    :applescript ["--" "shBrushAppleScript.js"]
-   :actionscript3 ["//" "shBrushAS3.js"]
    :as3 ["//" "shBrushAS3.js"]
    :bash ["#" "shBrushBash.js"]
    :shell ["#" "shBrushBash.js"]
@@ -158,6 +163,7 @@
   "A map of aliases to canonical language names."
   {:clj :clojure
    :cljs :clojure
+   :actionscript3 :as3
    :sh :bash
    :shell :bash
    :c :cpp
@@ -198,6 +204,22 @@
                        (. Extensions DEFINITIONS)
                        (. Extensions WIKILINKS))))
 
+; Pegdown's link rendering is overriden for the wiki link case. Un-qualified
+; links are given a qualified `href`, and qualified links are given an
+; unqualified value. [[normalize-anchor]] is used to normalize the `href`. For
+; example, in the file path/to/foo.c, these wiki links:
+;
+; ~~~~
+; [[one link]]
+; [[path/to/bar.c/another link]]
+; ~~~~
+;
+; create this output:
+;
+; ~~~~
+; <a href='#path/to/foo.c/one-link'>one link</a>
+; <a href='#path/to/bar.c/another-link'>another link</a>
+; ~~~~
 (def link-renderer
   "A pegdown LinkRenderer that renders wiki links as links to internal
   document fragments rather than external HTML pages."
@@ -213,7 +235,7 @@
              (LinkRenderer$Rendering.
                            (str
                              "#"
-                             (encode-anchor text))
+                             (normalize-anchor text))
                            (anchor-name text))
              (catch java.io.UnsupportedEncodingException _
                (throw (IllegalStateException.))))
@@ -248,7 +270,9 @@
            ~expr
            (cond-let ~bindings ~@more))))))
 
-(defn message [& s]
+(defn message
+  "Write s to standard error."
+  [& s]
   (when (:verbose? *settings*)
     (binding [*out* (io/writer System/err)]
       (println (apply str s)))))
@@ -261,7 +285,8 @@
     (f c)))
 
 (defn slurp-resource
-  "Get the complete contents of a Java resource."
+  "Get the complete contents of a Java resource. Throws an exception on
+  failure unless continue-on-failure? is truthy."
   [resource-name & continue-on-failure?]
   (try
     (-> (.getContextClassLoader (Thread/currentThread))
@@ -277,19 +302,28 @@
 
 (defn slurp-file|resource
   "Get the contents of the file at path, or failing that, the contents of a
-  Java resource."
+  Java resource. Throws an exception on failure unless continue-on-failure? is
+  truthy."
   [path & continue-on-failure?]
   (try (slurp path)
     (catch java.io.FileNotFoundException _
       (message "Using internal " path)
       (slurp-resource path continue-on-failure?))))
 
-(defn encode-anchor [s]
+(defn encode-anchor
+  "Encode s for use as a fragment identifier."
+  [s]
   (.replaceAll
     (if (some #{\/} s) s (str *path* "/" s))
     "\\s" "-"))
 
+(defn normalize-anchor
+  [s]
+  "Encode s using encode-anchor and ensure it is qualified by file path."
+  (encode-anchor (if (some #{\/} s) s (str *path* "/" s))))
+
 (defn html-escape
+  "Escape s for inclusion in HTML."
   [s]
   (string/escape
     s
@@ -297,25 +331,33 @@
      \> "&gt;"
      \& "&amp;"}))
 
-(defmacro with-out-stream [out & body]
+(defmacro with-out-stream
+  "Wrap an output stream using clojure.java.io/writer bind it to *out*, then
+  execute body."
+  [out & body]
   `(with-open [w# (io/writer ~out)]
      (binding [*out* w#]
        ~@body)))
 
 (defn canonical-lang
+  "Given a language keyword, return its canonical equivalent."
   [l]
   (let [k (keyword l)]
     (get language-aliases k k)))
 
 (defn lang-info
+  "Given a language keyword, return its information as a vector pair of
+  comment syntax and SyntaxHighlighter brush name."
   [l]
   (languages (canonical-lang l)))
 
 (defn lang-comment
+  "Given a language keyword, return its comment syntax."
   [l]
   (first (lang-info l)))
 
 (defn lang-brush
+  "Given a language keyword, return its default SyntaxHighlighter brush name."
   [l]
   (second (lang-info l)))
 
@@ -326,6 +368,12 @@
   "A regular expression matching the beginning of a commented line."
   []
   (re-pattern (str "^" (Pattern/quote *single-comment*) " ?")))
+
+(defn hidden-comment
+  "A regular expression matching the beginning of a commented line that will
+  not appear in the output."
+  []
+  (re-pattern (str "^\\s+" (Pattern/quote *single-comment*))))
 
 (defn anchor
   "A regular expression matching the beginning of an anchor line."
@@ -344,7 +392,14 @@
 
 
 ; ## Parsing
-
+;
+; Parsing is done by looping through a lazy list of lines. A character stream
+; backed by that lazy list is used when reading across lines is necessary. See
+; the `:else` case in [[classify-line]] and [[code-anchor-id :clojure]] for an
+; example.
+;
+; The entry-point for parsing is the [[gather-lines]] function at the end of
+; this section.
 
 (defn lines-reader [lines]
   (let [lines-left (atom (interpose "\n" (filter seq lines)))]
@@ -365,20 +420,50 @@
                        (rest ll)))
              (if c (int c) -1))))))))
 
-(defmulti code-anchor-id (fn [_ _] *language*) :default :default)
-
-(defmethod code-anchor-id :clojure [line reader]
-  (when (re-find #"^\(" line)
-    (let [code (read reader)]
-      (and (re-find #"^def" (str (first code)))
-           (name (second code))))))
-
-(defmethod code-anchor-id :vim [line reader]
-  (second (re-find #"^function!?\s+([a-zA-Z_][a-zA-Z_0-9]+)" line)))
+; Anchors for definitions are generated using the current line and a reader
+; from the current line. Methods are expected to return a string identifying
+; the definition, or `nil` if there is no definition beginning at the current
+; line. The default method unconditionally returns `nil`.
+(defmulti code-anchor-id
+  "If the current line (or reader) begins a definition, return the definition
+  name, otherwise return nil."
+  (fn [line reader] *language*)
+  :default :default)
 
 (defmethod code-anchor-id :default [_ _] nil)
 
-(defn maybe-code-anchor [line reader]
+; The clojure method uses the clojure reader, which should be more robust
+; than methods which use regular expressions.
+(defmethod code-anchor-id :clojure [line reader]
+  (when (re-find #"^\(" line)
+    (let [code (read reader)]
+      (cond
+        (= 'defmethod (first code))
+        (str (second code) " " (nth code 2))
+
+        (re-find #"^def" (str (first code)))
+        (name (second code))
+
+        :else nil))))
+
+; Not all of these methods are well tested, like this javascript one.
+(defmethod code-anchor-id :javascript [line reader]
+  (or (second (re-find #"^\s*function\s+([^\s\(]+)" line))
+      (second (re-find #"^var\s+([A-Za-z_][A-Za-z_0-9]*)\s*=\s*function[\s\(]" line))
+      (second (re-find #"^\s*'?([A-Za-z_][A-Za-z_0-9]*)'?\s*:\s*function[\s\(]" line))))
+
+(defmethod code-anchor-id :vim [line reader]
+  (second (re-find #"^function!?\s+([a-zA-Z_][a-zA-Z_0-9]*)" line)))
+
+; The line parser emits a list of `[<classification> <data>]` pairs. This
+; function calls [[code-anchor-id]] and returns an `[:anchor <id>]` pair.
+; It also stores the anchor information for future use by [[code-anchor-toc]],
+; which generates a table of contents for definitions with anchors.
+(defn maybe-code-anchor
+  "If the current line (or reader) begins a definition, store the definition
+  name in *code-anchors* with the current file path as its key. Return the
+  path qualified id, or return nil."
+  [line reader]
   (if-let [id (code-anchor-id line reader)]
     (do
       (swap! *code-anchors*
@@ -390,7 +475,10 @@
 ; Each line of a source file will be either code, comment, anchor, or include.
 ; Headings are treated as both anchors and comments.
 (defn classify-line
-  ""
+  "Classify the first line in lines. Commented lines prefixed by white space
+  are ignored. Returns a vector containing a single pair of the form
+  [<classification> <data>], where <data> is a string except in the case of an
+  include where it is a vector of [<path> & [<comment-syntax> <language>]]."
   [[line :as lines]]
   (letfn [(match? [reg] (re-find (reg) line))]
     (cond-let
@@ -402,21 +490,24 @@
                         [:comment (.substring
                                     line (count (match? comment)))]]
       (match? comment) [[:comment (.substring line (count match))]]
+      (match? hidden-comment) []
       :else (conj (maybe-code-anchor line (lines-reader lines))
                   [:code line]))))
 
+; Each line is classified lazily.
 (defn classify-lines
-  "Classify a line as :code or :comment. Return a pair of the classification
-  and line string, sans leading comment tokens in the case of a comment."
+  "Classify each line in lines as :code, :comment, :anchor, or :include.
+  Returns a lazy list of [<classification> <data>] pairs. See classify-line for
+  more detail."
   [lines]
-  (loop [lines lines acc []]
-    (if (seq lines)
-      (recur (rest lines) (conj acc (classify-line lines)))
-      (apply concat acc))))
+  (lazy-seq
+    (when (seq lines)
+      (concat (classify-line lines) (classify-lines (rest lines))))))
 
 ; Adjacent lines of the same classification need to be gathered together into
-; a single string except for anchors and includes.
-(defn gather-lines- [lines]
+; a single string (except for anchors and includes).
+(defn gather-lines-
+  [lines]
   (lazy-seq
     (when-let [classfn (first (first lines))]
       (if (#{:comment :code} classfn)
@@ -425,17 +516,19 @@
           (cons [classfn text] (gather-lines- tail)))
         (cons (first lines) (gather-lines- (rest lines)))))))
 
-(defn gather-lines [lines]
+; The entry-point for parsing is this `gather-lines` function.
+(defn gather-lines
+  "Join adjacent strings of the same classification together (except :anchor
+  and :include). Return a lazy list of [<classification> <data>] pairs. See
+  classify-line for more detail."
+  [lines]
   (gather-lines- (classify-lines lines)))
 
-; The result of gathering is a list of pairs of the form
-; `[<classification> <data>]`.
-;
-;
+
 ; ## Rendering
 ;
 ; The method that transforms each classified chunk into HTML, dispatches on the
-; classification.
+; classification of each item in the list returned by [[gather-lines]].
 (defmulti html<- first)
 
 ; SyntaxHighlighter brushes are associated with files if the language is
@@ -500,7 +593,7 @@
   (println (.markdownToHtml processor text link-renderer)))
 
 (defmethod html<- :anchor [[_ text]]
-  (println (str "<a id='" (encode-anchor text) "'></a>")))
+  (println (str "<a id='" (normalize-anchor text) "'></a>")))
 
 (defmethod html<- :include [[_ [path & [token lang]] :as args]]
   (let [lang (or lang (re-find #"(?<=\.)[^.]+$" path))]
@@ -571,34 +664,11 @@
   (inline-css (slurp-resource "page.css"))
   (inline-stylesheet))
 
-; SyntaxHighlighter's defaults are not suitable, so they are tweaked.
-(defn syntax-highlighter-setup []
-  (inline-js
-    (str "SyntaxHighlighter.defaults['toolbar'] = false;"
-         "SyntaxHighlighter.defaults['smart-tabs'] = false;"
-         "SyntaxHighlighter.defaults['gutter'] = false;"
-         "SyntaxHighlighter.defaults['unindent'] = false;"
-         "SyntaxHighlighter.defaults['class-name'] = 'code';"
-         "SyntaxHighlighter.all();")))
-
-; [h50](http://code.google.com/p/h5o/), the HTML5 outliner is used to create
-; a table of contents.
-(defn outliner-setup []
-  (println "<div id=outline></div>")
-  (inline-js
-    (str "var outline = document.getElementById('outline');"
-         "outline.innerHTML = HTML5Outline(document.body).asHTML(true);"
-         "var children = outline.firstElementChild.firstElementChild.children;"
-         "outline.removeChild(outline.firstElementChild);"
-         "for (var i = 1; i < children.length; ++i) {"
-         "  outline.appendChild(children[i]);"
-         "}")))
-
-; And here the two scripts are combined.
+; Javascript configuration and entry-point for SyntaxHighlighter and TOC
+; outline are included from an external resource.
 (defn javascript-setup []
-  (syntax-highlighter-setup)
-  (outliner-setup))
-    
+  (inline-js (slurp-resource "page.js")))
+
 
 ; ## Output
 ;
@@ -629,9 +699,9 @@
             *code-anchors* (atom (array-map))]
     (render-files- paths)))
 
-; The output stream can be a file or standard output or anything
+; The program entry-point takes a list of paths to input files and a single
+; output stream which can also be a file path or anything
 ; `clojure.java.io/writer` can handle.
-
 (defn process-files
   "Take a list of file paths and an output stream, and render each file to the
   stream as HTML."

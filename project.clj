@@ -22,8 +22,9 @@
    [org.pegdown/pegdown "1.1.0"]
    ;[com.google.javascript/closure-compiler "r1592"]
 
-; A [modified][m] `org.clojure/tools.cli` is used (for repeated options). A
-; pull request is [pending][p] for upstream inclusion.
+; A [modified][m] `org.clojure/tools.cli` is used (for repeated options).
+; Upstream inclusion pending the sending of a [Rich Hickey Contributor
+; Agreement (PDF)](http://clojure.org/file/view/ca.pdf) form.
 ;
 ; [m]: https://github.com/jedahu/tools.cli
 ; [p]: https://github.com/clojure/tools.cli/pull/5
@@ -41,9 +42,9 @@
 ; story syntax for includes.
 ;
 ; Comment blocks that are flush with the left margin are parsed and rendered
-; using Markdown. Anchors are comment lines whose content is '`@<anchor-id>`'.
-; To include another source file add a comment line whose content is
-; '`%include <file-path>`'.
+; using Markdown, those prefixed with whitespace are ignored. Anchors are
+; comment lines whose content is '`@<anchor-id>`'. To include another source
+; file add a comment line whose content is '`%include <file-path>`'.
 ;
 ; By default this program is set up to process a Lisp like language with single
 ; semi-colon comment tokens. A small source example with anchors, includes,
@@ -52,27 +53,46 @@
 ; <pre class='brush: clojure'>
 ; ; # My awesome program
 ; ;
-; ; Introductory paragraph. Fast forward to the [[code]].
+; ; Introductory paragraph, uses *Markdown*. Fast forward to the
+; ; [[last paragraph]].
 ; ;
 ; ; Blah blah blah.
 ;
-; ;@code
 ; (defn hello []
 ;   (println "Hello world!"))
 ; 
-; ; See the code [again!](#code)
-;
 ; ;%include fibonacci.clj
 ; ;%include fibonacci.js // javascript
+; ;
+; ;@last paragraph
+; ; This is the last paragraph. Go back to the [[hello]] function. Go to the
+; ; [[fibonacci.clj/fib]] function.
 ; </pre>
+;
+; ### Includes
 ;
 ; As you can see, files written in different languages can be included. In this
 ; example `fibonacci.js` is followed by the comment syntax and language name to
-; use with SyntaxHighlighter. For a number of languages this information can be
-; obtained from the file extension and the appropriate brush file pulled in
-; automatically; those languages are listed in the
+; use with SyntaxHighlighter. For a number of languages (including javascript)
+; this information can be obtained from the file extension and the appropriate
+; brush file pulled in automatically; those languages are listed in the
 ; [[src/me/panzoo/story.clj/Language map]].
 ;
+; ### Internal links
+;
+; Wiki style links (`[[link]]`) point to explicit anchors (`;@<id>`) or to
+; implicit anchors (the names of definitions). Implicit anchors are created
+; for Markdown headings (#-style only) and definitions in code (only for
+; languages with methods for
+; `me.panzoo.story/`[[src/me/panzoo/story.clj/code-anchor-id]]; be aware, not
+; all methods have been well tested).
+;
+; Wiki links to anchors in other files must be qualified by the file's path.
+; The markup for the link to `code-anchor-id` looks like this:
+; `[[src/me/panzoo/story.clj/code-anchor-id]]`.
+;
+; If any anchors for code definitions are created, an alphabetical TOC like
+; list of links to those anchors will appear on the right side of the page.
 ;
 ; ### Build instructions
 ;
@@ -117,4 +137,5 @@
 ; ["project.clj"] "index.html")`.
 ;
 ;%include src/me/panzoo/story.clj
+;%include resources/page.js
 ;%include folding.vim

@@ -63,7 +63,7 @@
 
 ; Brushes can be added by the program whenever a new file is processed. They
 ; must be path strings. This variable is given a binding only in the
-; `[[render-files]]` function.
+; [[render-files]] function.
 (def ^:dynamic *brushes* nil)
 
 
@@ -152,8 +152,7 @@
 ;
 ; [pp]: http://www.decodified.com/pegdown/api/org/pegdown/PegDownProcessor.html
 ; [lr]: http://www.decodified.com/pegdown/api/org/pegdown/LinkRenderer.html
-;
-;@pegdown-extensions
+
 (def processor
   "A PegDownProcessor set up with the following extensions:
   AUTOLINKS
@@ -171,23 +170,27 @@
 (def link-renderer
   "A pegdown LinkRenderer that renders wiki links as links to internal
   document fragments rather than external HTML pages."
-  (proxy [LinkRenderer] []
-    (render
-      ([node]
-       (if (instance? WikiLinkNode node)
-         (try
-           (LinkRenderer$Rendering.
-             (str
-               "#"
-               (encode-anchor (.. node (getText))))
-             (.getText node))
-           (catch java.io.UnsupportedEncodingException _
-             (throw (IllegalStateException.))))
-         (proxy-super render node)))
-      ([node text]
-       (proxy-super render node text))
-      ([node url title text]
-       (proxy-super render node url title text)))))
+  (letfn [(def-name [s] (re-find #"(?<=/)[^/]+$" s))
+          (anchor-name [s]
+            (or (def-name s) s))]
+    (proxy [LinkRenderer] []
+      (render
+        ([node]
+         (if-let [text (and (instance? WikiLinkNode node)
+                            (.getText node))]
+           (try
+             (LinkRenderer$Rendering.
+                           (str
+                             "#"
+                             (encode-anchor text))
+                           (anchor-name text))
+             (catch java.io.UnsupportedEncodingException _
+               (throw (IllegalStateException.))))
+           (proxy-super render node)))
+        ([node text]
+         (proxy-super render node text))
+        ([node url title text]
+         (proxy-super render node url title text))))))
 
 
 ; ## Utilities
@@ -251,7 +254,9 @@
       (slurp-resource path continue-on-failure?))))
 
 (defn encode-anchor [s]
-  (java.net.URLEncoder/encode (.replaceAll s "\\s" "-") "UTF-8"))
+  (.replaceAll
+    (if (some #{\/} s) s (str *path* "/" s))
+    "\\s" "-"))
 
 (defmacro with-out-stream [out & body]
   `(with-open [w# (io/writer ~out)]
@@ -559,7 +564,6 @@
   (inline-brushes)
   (javascript-setup))
 
-;@render-files
 (defn render-files [paths]
 
 ; `*brushes*` is rebound on every invocation of `render-files`, because if it
@@ -572,7 +576,6 @@
 ; The output stream can be a file or standard output or anything
 ; `clojure.java.io/writer` can handle.
 
-;@process-files
 (defn process-files
   "Take a list of file paths and an output stream, and render each file to the
   stream as HTML."

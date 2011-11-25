@@ -2496,11 +2496,16 @@ typeof(exports) != 'undefined' ? exports.SyntaxHighlighter = SyntaxHighlighter :
   text-align: left;
 }
 
+.code
+{
+  margin-top: 1em;
+}
+
 body
 {
   font-family: sans-serif;
   font-size: 0.95em;
-  margin: 0 0 0 2em;
+  margin: 0;
   padding: 0;
 }
 
@@ -2510,9 +2515,18 @@ h1, h2, h3, h4, h5, h6
   color: #535388;
 }
 
+a,
+a:hover
+{
+  text-decoration: none;
+  color: #535388;
+}
+
 article
 {
   margin: 0;
+  margin-left: 12em;
+  padding: 0;
   width: 38em;
   text-align: justify;
 }
@@ -2550,84 +2564,127 @@ div#outline
 {
   position: fixed;
   top: 2em;
-  left: 41em;
+  left: 0em;
+  width: 10em;
 }
 
 div#outline > ol
 { font-size: 0.8em }
-
-div#outline ol
-{
-  margin-left: 0;
-  padding-left: 1em;
-  list-style-type: none;
-}
 
 div#outline ol ol ol ol
 {
   display: none;
 }
 
-div#outline a
+div#code-anchors
+{
+  position: absolute;
+  top: 2em;
+  left: 51em;
+  padding-right: 1em;
+}
+
+div#code-anchors > ul
+{
+  font-family: monospace;
+  font-size: 0.8em;
+}
+
+div#code-anchors > ul ul
+{
+  padding-bottom: 1em;
+}
+
+div#outline ol,
+div#code-anchors ul
+{
+  margin-left: 0;
+  padding-left: 1em;
+  padding-right: 0;
+  list-style-type: none;
+  text-indent: -1em;
+}
+
+div#outline,
+div#code-anchors
+{
+  padding-left: 1em;
+  color: #535388;
+}
+
+div#outline a,
+div#code-anchors a,
+div#outline a:visited,
+div#code-anchors a:visited
 {
   text-decoration: none;
+  color: #9393aa;
+}
+
+div#outline > ol > li > a,
+div#outline > ol > li > a:visited
+{
+  color: #535388;
 }
  </style>
-<article>
-<a id='A-programming-story'></a>
+<article><a id='project.clj/A-programming-story'></a>
 <h1>A programming story</h1><p>This is the story of a small program that parses source code. It converts comments into HTML (via <a href="http://daringfireball.net/projects/markdown/">Markdown</a>) and nicely highlights code (using <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a>).</p>
-<pre class='brush: clj'>(defproject
-  me.panzoo/story "0.0.2-SNAPSHOT"
+<a id='project.clj/story'></a>
+<pre class='brush: clojure'>(defproject
+  me.panzoo/story "0.0.2"
 
   :description "A literate programming tool."
 </pre>
-<p>The program is written in the <a href="http://clojure.org">Clojure</a> language and uses the <a href="https://github.com/sirthias/pegdown">pegdown</a> implementation of Markdown with a number of its extensions <a href="#pegdown-extensions">enabled</a>.</p>
-<pre class='brush: clj'>  :dependencies
+<p>The program is written in the <a href="http://clojure.org">Clojure</a> language and uses the <a href="https://github.com/sirthias/pegdown">pegdown</a> implementation of Markdown with a number of its extensions <a href="#src/me/panzoo/story.clj/Pegdown-instances">enabled</a>.</p>
+<pre class='brush: clojure'>  :dependencies
   [[org.clojure/clojure "1.3.0"]
    [org.pegdown/pegdown "1.1.0"]
-   ;[com.google.javascript/closure-compiler "r1592"]
 </pre>
-<p>A <a href="https://github.com/jedahu/tools.cli">modified</a> <code>org.clojure/tools.cli</code> is used (for repeated options). A pull request is <a href="https://github.com/clojure/tools.cli/pull/5">pending</a> for upstream inclusion.</p>
-<pre class='brush: clj'>   [me.panzoo/tools.cli "0.2.2"]]
+<p>A <a href="https://github.com/jedahu/tools.cli">modified</a> <code>org.clojure/tools.cli</code> is used (for repeated options). Upstream inclusion pending the sending of a <a href="http://clojure.org/file/view/ca.pdf">Rich Hickey Contributor Agreement (PDF)</a> form.</p>
+<pre class='brush: clojure'>   [me.panzoo/tools.cli "0.2.2"]]
   
   :main me.panzoo.story)
 </pre>
 <p>Check out the sources at <a href="https://github.com/jedahu/story">https://github.com/jedahu/story</a></p>
-<a id='Synopsis'></a>
-<h2>Synopsis</h2><p>To use this program you need to know four things: the single-line comment syntax of your source-code, Markdown, the story syntax for anchors, and the story syntax for includes.</p><p>Comment blocks that are flush with the left margin are parsed and rendered using Markdown. Anchors are comment lines whose content is &lsquo;<code>@&lt;anchor-id&gt;</code>&rsquo;. To include another source file add a comment line whose content is &lsquo;<code>%include &lt;file-path&gt;</code>&rsquo;.</p><p>By default this program is set up to process a Lisp like language with single semi-colon comment tokens. A small source example with anchors, includes, and wiki links might look like this:</p>
+<a id='project.clj/Synopsis'></a>
+<h2>Synopsis</h2><p>To use this program you need to know four things: the single-line comment syntax of your source-code, Markdown, the story syntax for anchors, and the story syntax for includes.</p><p>Comment blocks that are flush with the left margin are parsed and rendered using Markdown, those prefixed with whitespace are ignored. Anchors are comment lines whose content is &lsquo;<code>@&lt;anchor-id&gt;</code>&rsquo;. To include another source file add a comment line whose content is &lsquo;<code>%include &lt;file-path&gt;</code>&rsquo;.</p><p>By default this program is set up to process a Lisp like language with single semi-colon comment tokens. A small source example with anchors, includes, and wiki links might look like this:</p>
 <pre class='brush: clojure'>
 ; # My awesome program
 ;
-; Introductory paragraph. Fast forward to the [[code]].
+; Introductory paragraph, uses *Markdown*. Fast forward to the
+; [[last paragraph]].
 ;
 ; Blah blah blah.
 
-;@code
 (defn hello []
   (println "Hello world!"))
 
-; See the code [again!](#code)
-
 ;%include fibonacci.clj
 ;%include fibonacci.js // javascript
-</pre><p>As you can see, files written in different languages can be included. In this example <code>fibonacci.js</code> is followed by the comment syntax and language name to use with SyntaxHighlighter. For a number of languages this information can be obtained from the file extension and the appropriate brush file pulled in automatically; those languages are listed in the <a href="#Language-map">Language map</a>.</p>
-<a id='Build-instructions'></a>
+;
+;@last paragraph
+; This is the last paragraph. Go back to the [[hello]] function. Go to the
+; [[fibonacci.clj/fib]] function.
+</pre>
+<a id='project.clj/Includes'></a>
+<h3>Includes</h3><p>As you can see, files written in different languages can be included. In this example <code>fibonacci.js</code> is followed by the comment syntax and language name to use with SyntaxHighlighter. For a number of languages (including javascript) this information can be obtained from the file extension and the appropriate brush file pulled in automatically; those languages are listed in the <a href="#src/me/panzoo/story.clj/Language-map">Language map</a>.</p>
+<a id='project.clj/Internal-links'></a>
+<h3>Internal links</h3><p>Wiki style links (<code>[[link]]</code>) point to explicit anchors (<code>;@&lt;id&gt;</code>) or to implicit anchors (the names of definitions). Implicit anchors are created for Markdown headings (#-style only) and definitions in code (only for languages with methods for <code>me.panzoo.story/</code><a href="#src/me/panzoo/story.clj/code-anchor-id">code-anchor-id</a>; be aware, not all methods have been well tested).</p><p>Wiki links to anchors in other files must be qualified by the file&rsquo;s path. The markup for the link to <code>code-anchor-id</code> looks like this: <code>[[src/me/panzoo/story.clj/code-anchor-id]]</code>.</p><p>If any anchors for code definitions are created, an alphabetical TOC like list of links to those anchors will appear on the right side of the page.</p>
+<a id='project.clj/Build-instructions'></a>
 <h3>Build instructions</h3><p>To build <code>story.jar</code> make sure <a href="https://github.com/technomancy/leiningen">Leiningen</a> is installed and run the following commands in the story project directory:</p>
 <pre><code>lein deps
 lein uberjar
 </code></pre><p>If all goes well a file named something like <code>story-x.x.x-standalone.jar</code> will have magically appeared in the project directory. Rename it to <code>story.jar</code> if you like.</p>
-<a id='Command-line-usage'></a>
+<a id='project.clj/Command-line-usage'></a>
 <h3>Command line usage</h3>
 <pre><code>java -jar story.jar input-files output
-</code></pre><p>If <code>output</code> is absent, the program&rsquo;s output is streamed to standard-out. For more detail run the program with the <code>--help</code> option or have a look at the <a href="#Commandline">Commandline</a> section.</p><p>This HTML document (assuming you are not reading the source file) was created by the command: <code>java -jar story.jar project.clj index.html</code>.</p>
-<a id='Programmatic-usage'></a>
-<h3>Programmatic usage</h3><p>Call <a href="#process-files"><code>me.panzoo.story/process-files</code></a> with a list of file paths and an output stream or file-path. It may be necessary to set up bindings for one or more of the dynamic variables described in the <a href="#Top-level-variables">Top
-level variables</a> section depending on whether the file suffixes are in the <a href="#Language-map">Language map</a> or not.</p><p>The equivalent of the above commandline invocation is: <code>(process-files
+</code></pre><p>If <code>output</code> is absent, the program&rsquo;s output is streamed to standard-out. For more detail run the program with the <code>--help</code> option or have a look at the <a href="#src/me/panzoo/story.clj/Commandline">Commandline</a> section.</p><p>This HTML document (assuming you are not reading the source file) was created by the command: <code>java -jar story.jar project.clj index.html</code>.</p>
+<a id='project.clj/Programmatic-usage'></a>
+<h3>Programmatic usage</h3><p>Call <code>me.panzoo.story/</code><a href="#src/me/panzoo/story.clj/process-files">process-files</a> with a list of file paths and an output stream or file-path. It may be necessary to set up bindings for one or more of the dynamic variables described in the <a href="#src/me/panzoo/story.clj/Top-level-variables">Top level variables</a> section depending on whether the file suffixes are in the <a href="#src/me/panzoo/story.clj/Language-map">Language map</a> or not.</p><p>The equivalent of the above commandline invocation is: <code>(process-files
 [&quot;project.clj&quot;] &quot;index.html&quot;)</code>.</p>
-<section>
-<a id='The-code'></a>
+<section><a id='src/me/panzoo/story.clj/The-code'></a>
 <h1>The code</h1><p>The usual stuff comes first. This code needs to read and write to files, manipulate strings, and parse Markdown.</p>
-<pre class='brush: clj'>(ns me.panzoo.story
+<pre class='brush: clojure'>(ns me.panzoo.story
   (:refer-clojure :exclude [comment])
   (:require
     [clojure.java.io :as io]
@@ -2638,103 +2695,130 @@ level variables</a> section depending on whether the file suffixes are in the <a
     [org.pegdown PegDownProcessor Extensions
 </pre>
 <p>Internal links (to element ids) are nice to have. These imports will be used to create a modified LinkRenderer.</p>
-<pre class='brush: clj'>     LinkRenderer LinkRenderer$Rendering]
+<pre class='brush: clojure'>     LinkRenderer LinkRenderer$Rendering]
     [org.pegdown.ast WikiLinkNode])
 </pre>
 <p>To run from the commandline this namespace must be compiled with a <code>-main</code> method. When run from the REPL or from Leiningen <code>gen-class</code> does nothing.</p>
-<pre class='brush: clj'>  (:gen-class))
-
-(declare encode-anchor)
+<pre class='brush: clojure'>  (:gen-class))
 </pre>
-<a id='Top-level-variables'></a>
-<h2>Top level variables</h2><p>A few objects need to be accessed by a number of functions: regular expressions that match the beginning of commented lines, SyntaxHighlighter options, a PegDownProcessor, and a modified LinkRenderer.</p>
-<a id='Settings'></a>
+<p>A few of the top level variables use these utility functions.</p>
+<pre class='brush: clojure'>
+(declare normalize-anchor)
+(declare html-escape)
+</pre>
+<a id='src/me/panzoo/story.clj/Top-level-variables'></a>
+<h2>Top level variables</h2><p>A few objects need to be accessed by a number of functions: regular expressions that match the beginning of lines, SyntaxHighlighter options, a PegDownProcessor, and a modified LinkRenderer.</p>
+<a id='src/me/panzoo/story.clj/Settings'></a>
 <h3>Settings</h3><p>This dynamic variable is bound once in the commandline <code>-main</code> method and is never subsequently altered by the code in this namespace. The variable is bound to a map containing the following settings: which SyntaxHighlighter theme to use; which SyntaxHighlighter brushes to include to start with (other brushes may be added automatically by the program); what CSS file to include if any; and whether to log messages to std-err or not.</p>
-<pre class='brush: clj'>(def ^:dynamic *settings*
+<a id='src/me/panzoo/story.clj/*settings*'></a>
+<pre class='brush: clojure'>(def ^:dynamic *settings*
   {:theme "shThemeEclipse.css"
    :static-brushes []
    :stylesheet nil
    :verbose? false})
 
 </pre>
-<a id='Per-file'></a>
-<h3>Per file</h3><p>These variables are rebound for every input file.</p>
-<pre class='brush: clj'>
-(def ^:dynamic *single-comment*
+<a id='src/me/panzoo/story.clj/Per-input-file'></a>
+<h3>Per input file</h3><p>These variables are rebound for every input file.</p>
+<a id='src/me/panzoo/story.clj/*single-comment*'></a>
+<pre class='brush: clojure'>(def ^:dynamic *single-comment*
   "A string containing a single comment token."
   ";")
-
-(def ^:dynamic *language*
+</pre>
+<a id='src/me/panzoo/story.clj/*language*'></a>
+<pre class='brush: clojure'>(def ^:dynamic *language*
   "A language string for use with SyntaxHighlighter."
-  "clojure")
+  :clojure)
 </pre>
-<p>Brushes can be added by the program whenever a new file is processed. They must be path strings. This variable is given a binding only in the <code>[[render-files]]</code> function.</p>
-<pre class='brush: clj'>(def ^:dynamic *brushes* nil)
+<a id='src/me/panzoo/story.clj/*path*'></a>
+<pre class='brush: clojure'>(def ^:dynamic *path*
+  "The path of the file currently being processed."
+  nil)
 
 </pre>
-<a id='Language-map'></a>
-<h3>Language map</h3><p>Including SyntaxHighlighter brush files automatically based on file suffix or the language argument to an include directive is preferrable to explicitly listing brushes on the commandline or in a program that calls this one. Comment syntax is listed here too for the same reason.</p><p>Some languages are commented out because they either do not have comments or because they only have block comments. Their dull lifeless forms remind the maintainer of this program to do something about that.</p>
-<pre class='brush: clj'>(def languages
+<a id='src/me/panzoo/story.clj/Per-output-stream'></a>
+<h3>Per output stream</h3><p>These variables are given bindings only in the <a href="#src/me/panzoo/story.clj/render-files">render-files</a> function.</p><p>Brushes can be added by the program whenever a new file is processed.</p>
+<a id='src/me/panzoo/story.clj/*brushes*'></a>
+<pre class='brush: clojure'>(def ^:dynamic *brushes* nil)
+</pre>
+<a id='src/me/panzoo/story.clj/*code-anchors*'></a>
+<pre class='brush: clojure'>(def ^:dynamic *code-anchors* nil)
+
+</pre>
+<a id='src/me/panzoo/story.clj/Language-map'></a>
+<h3>Language map</h3><p>Including SyntaxHighlighter brush files automatically based on file suffix or the language argument to an include directive is preferrable to explicitly listing brushes on the commandline or in a program that calls this one. Comment syntax is listed here too for the same reason.</p><p>Some languages are commented out because they either do not have comments or because they only have block comments. Their dull lifeless forms remind the maintainer of this program to do something about that.</p><p>Don&rsquo;t use <code>languages</code> and <code>language-aliases</code> directly. Use <a href="#src/me/panzoo/story.clj/lang-info">lang-info</a>, <a href="#src/me/panzoo/story.clj/lang-brush">lang-brush</a>, and <a href="#src/me/panzoo/story.clj/lang-comment">lang-comment</a> instead. Those three functions route their input through <a href="#src/me/panzoo/story.clj/canonical-lang">canonical-lang</a> which resolves any aliases to their canonical equivalent.</p>
+<a id='src/me/panzoo/story.clj/languages'></a>
+<pre class='brush: clojure'>(def languages
   "A map of language names to a pairs of comment syntax and SyntaxHighlighter
   brush file names."
-  {"clojure" [";" "shBrushClojure.js"]
-   "clj" [";" "shBrushClojure.js"]
-   "cljs" [";" "shBrushClojure.js"]
-   "applescript" ["--" "shBrushAppleScript.js"]
-   "actionscript3" ["//" "shBrushAS3.js"]
-   "as3" ["//" "shBrushAS3.js"]
-   "bash" ["#" "shBrushBash.js"]
-   "shell" ["#" "shBrushBash.js"]
-   "sh" ["#" "shBrushBash.js"]
-   ;"coldfusion" "shBrushColdFusion.js"
-   "cpp" ["//" "shBrushCpp.js"]
-   "c++" ["//" "shBrushCpp.js"]
-   "cxx" ["//" "shBrushCpp.js"]
-   "c" ["//" "shBrushCpp.js"]
-   "c#" ["//" "shBrushCSharp.js"]
-   "c-sharp" ["//" "shBrushCSharp.js"]
-   "csharp" ["//" "shBrushCSharp.js"]
-   "delphi" ["//" "shBrushDelphi.js"]
-   "pascal" ["//" "shBrushDelphi.js"]
-   ;"diff" "shBrushDiff.js"
-   ;"patch" "shBrushDiff.js"
-   "erlang" ["%" "shBrushErlang.js"]
-   "erl" ["%" "shBrushErlang.js"]
-   "groovy" ["//" "shBrushGroovy.js"]
-   "java" ["//" "shBrushJava.js"]
-   "javafx" ["//" "shBrushJavaFX.js"]
-   "jfx" ["//" "shBrushJavaFX.js"]
-   "javascript" ["//" "shBrushJScript.js"]
-   "js" ["//" "shBrushJScript.js"]
-   "perl" ["#" "shBrushPerl.js"]
-   "pl" ["#" "shBrushPerl.js"]
-   "php" ["#" "shBrushPhp.js"]
-   ;"text" "shBrushPlain.js"
-   ;"txt" "shBrushPlain.js"
-   ;"plain" "shBrushPlain.js"
-   "python" ["#" "shBrushPython.js"]
-   "py" ["#" "shBrushPython.js"]
-   "ruby" ["#" "shBrushRuby.js"]
-   "rb" ["#" "shBrushRuby.js"]
-   "sass" ["//" "shBrushSass.js"]
-   "scss" ["//" "shBrushSass.js"]
-   "scala" ["//" "shBrushScala.js"]
-   "sql" ["--" "shBrushSql.js"]
-   "vim" ["\"" "shBrushVimscript.js"]
-   "vimscript" ["\"" "shBrushVimscript.js"]
-   "vb" ["'" "shBrushVb.js"]
-   "vbnet" ["'" "shBrushVb.js"]
-   ;"xml" "shBrushXml.js"
-   ;"xhtml" "shBrushXml.js"
-   ;"xslt" "shBrushXml.js"
-   ;"html" "shBrushXml.js"
+  {:clojure [";" "shBrushClojure.js"]
+   :applescript ["--" "shBrushAppleScript.js"]
+   :as3 ["//" "shBrushAS3.js"]
+   :bash ["#" "shBrushBash.js"]
+   :shell ["#" "shBrushBash.js"]
+   :sh ["#" "shBrushBash.js"]
+   :cpp ["//" "shBrushCpp.js"]
+   :c++ ["//" "shBrushCpp.js"]
+   :cxx ["//" "shBrushCpp.js"]
+   :c ["//" "shBrushCpp.js"]
+   :c# ["//" "shBrushCSharp.js"]
+   :c-sharp ["//" "shBrushCSharp.js"]
+   :csharp ["//" "shBrushCSharp.js"]
+   :delphi ["//" "shBrushDelphi.js"]
+   :pascal ["//" "shBrushDelphi.js"]
+   :erlang ["%" "shBrushErlang.js"]
+   :erl ["%" "shBrushErlang.js"]
+   :groovy ["//" "shBrushGroovy.js"]
+   :java ["//" "shBrushJava.js"]
+   :javafx ["//" "shBrushJavaFX.js"]
+   :jfx ["//" "shBrushJavaFX.js"]
+   :javascript ["//" "shBrushJScript.js"]
+   :js ["//" "shBrushJScript.js"]
+   :perl ["#" "shBrushPerl.js"]
+   :pl ["#" "shBrushPerl.js"]
+   :php ["#" "shBrushPhp.js"]
+   :python ["#" "shBrushPython.js"]
+   :py ["#" "shBrushPython.js"]
+   :ruby ["#" "shBrushRuby.js"]
+   :rb ["#" "shBrushRuby.js"]
+   :sass ["//" "shBrushSass.js"]
+   :scss ["//" "shBrushSass.js"]
+   :scala ["//" "shBrushScala.js"]
+   :sql ["--" "shBrushSql.js"]
+   :vim ["\"" "shBrushVimscript.js"]
+   :vimscript ["\"" "shBrushVimscript.js"]
+   :vb ["'" "shBrushVb.js"]
+   :vbnet ["'" "shBrushVb.js"]
    })
+</pre>
+<a id='src/me/panzoo/story.clj/language-aliases'></a>
+<pre class='brush: clojure'>(def language-aliases
+  "A map of aliases to canonical language names."
+  {:clj :clojure
+   :cljs :clojure
+   :actionscript3 :as3
+   :sh :bash
+   :shell :bash
+   :c :cpp
+   :c++ :cpp
+   :cxx :cpp
+   :c# :csharp
+   :c-sharp :csharp
+   :erl :erlang
+   :jfx :javafx
+   :js :javascript
+   :pl :perl
+   :py :python
+   :rb :ruby
+   :sass :scss
+   :vimscript :vim
+   :vbnet :vb})
 
 </pre>
-<a id='Pegdown-instances'></a>
+<a id='src/me/panzoo/story.clj/Pegdown-instances'></a>
 <h3>Pegdown instances</h3><p>The same <a href="http://www.decodified.com/pegdown/api/org/pegdown/PegDownProcessor.html">pegdown processor</a> and <a href="http://www.decodified.com/pegdown/api/org/pegdown/LinkRenderer.html">link renderer</a> are used for each program execution.</p>
-<a id='pegdown-extensions'></a>
-<pre class='brush: clj'>(def processor
+<a id='src/me/panzoo/story.clj/processor'></a>
+<pre class='brush: clojure'>(def processor
   "A PegDownProcessor set up with the following extensions:
   AUTOLINKS
   SMARTYPANTS
@@ -2747,33 +2831,45 @@ level variables</a> section depending on whether the file suffixes are in the <a
                        (. Extensions FENCED_CODE_BLOCKS)
                        (. Extensions DEFINITIONS)
                        (. Extensions WIKILINKS))))
-
-(def link-renderer
+</pre>
+<p>Pegdown&rsquo;s link rendering is overriden for the wiki link case. Un-qualified links are given a qualified <code>href</code>, and qualified links are given an unqualified value. <a href="#src/me/panzoo/story.clj/normalize-anchor">normalize-anchor</a> is used to normalize the <code>href</code>. For example, in the file path/to/foo.c, these wiki links:</p>
+<pre><code>[[one link]]
+[[path/to/bar.c/another link]]
+</code></pre><p>create this output:</p>
+<pre><code>&lt;a href=&#39;#path/to/foo.c/one-link&#39;&gt;one link&lt;/a&gt;
+&lt;a href=&#39;#path/to/bar.c/another-link&#39;&gt;another link&lt;/a&gt;
+</code></pre>
+<a id='src/me/panzoo/story.clj/link-renderer'></a>
+<pre class='brush: clojure'>(def link-renderer
   "A pegdown LinkRenderer that renders wiki links as links to internal
   document fragments rather than external HTML pages."
-  (proxy [LinkRenderer] []
-    (render
-      ([node]
-       (if (instance? WikiLinkNode node)
-         (try
-           (LinkRenderer$Rendering.
-             (str
-               "#"
-               (encode-anchor (.. node (getText))))
-             (.getText node))
-           (catch java.io.UnsupportedEncodingException _
-             (throw (IllegalStateException.))))
-         (proxy-super render node)))
-      ([node text]
-       (proxy-super render node text))
-      ([node url title text]
-       (proxy-super render node url title text)))))
+  (letfn [(def-name [s] (re-find #"(?&lt;=/)[^/]+$" s))
+          (anchor-name [s]
+            (html-escape (or (def-name s) s)))]
+    (proxy [LinkRenderer] []
+      (render
+        ([node]
+         (if-let [text (and (instance? WikiLinkNode node)
+                            (.getText node))]
+           (try
+             (LinkRenderer$Rendering.
+                           (str
+                             "#"
+                             (normalize-anchor text))
+                           (anchor-name text))
+             (catch java.io.UnsupportedEncodingException _
+               (throw (IllegalStateException.))))
+           (proxy-super render node)))
+        ([node text]
+         (proxy-super render node text))
+        ([node url title text]
+         (proxy-super render node url title text))))))
 
 </pre>
-<a id='Utilities'></a>
+<a id='src/me/panzoo/story.clj/Utilities'></a>
 <h2>Utilities</h2><p>A few utility functions to make it easier to print messages to the console, iterate side-effects through a collection, access resources, encode a string for use as an id or fragment identifier, and bind an output stream to <code>*out*</code> over a lexical scope.</p>
-<pre class='brush: clj'>
-(defmacro cond-let
+<a id='src/me/panzoo/story.clj/cond-let'></a>
+<pre class='brush: clojure'>(defmacro cond-let
   "Takes a binding-form and a set of test/expr pairs. Evaluates each test one
   at a time. If a test returns logical true, cond-let evaluates and returns
   expr with binding-form bound to the value of test and doesn't evaluate any of
@@ -2789,21 +2885,27 @@ level variables</a> section depending on whether the file suffixes are in the <a
         `(if-let [~binding ~test]
            ~expr
            (cond-let ~bindings ~@more))))))
-
-(defn message [&amp; s]
+</pre>
+<a id='src/me/panzoo/story.clj/message'></a>
+<pre class='brush: clojure'>(defn message
+  "Write s to standard error."
+  [&amp; s]
   (when (:verbose? *settings*)
     (binding [*out* (io/writer System/err)]
       (println (apply str s)))))
-
-(defn each
+</pre>
+<a id='src/me/panzoo/story.clj/each'></a>
+<pre class='brush: clojure'>(defn each
   "Apply f to each item of coll in order for side effects only.
   Returns nil."
   [f coll]
   (doseq [c coll]
     (f c)))
-
-(defn slurp-resource
-  "Get the complete contents of a Java resource."
+</pre>
+<a id='src/me/panzoo/story.clj/slurp-resource'></a>
+<pre class='brush: clojure'>(defn slurp-resource
+  "Get the complete contents of a Java resource. Throws an exception on
+  failure unless continue-on-failure? is truthy."
   [resource-name &amp; continue-on-failure?]
   (try
     (-&gt; (.getContextClassLoader (Thread/currentThread))
@@ -2816,69 +2918,221 @@ level variables</a> section depending on whether the file suffixes are in the <a
         (message "    continuing anyway...")
         (do (message "    aborting...")
           (throw e))))))
-
-(defn slurp-file|resource
+</pre>
+<a id='src/me/panzoo/story.clj/slurp-file|resource'></a>
+<pre class='brush: clojure'>(defn slurp-file|resource
   "Get the contents of the file at path, or failing that, the contents of a
-  Java resource."
+  Java resource. Throws an exception on failure unless continue-on-failure? is
+  truthy."
   [path &amp; continue-on-failure?]
   (try (slurp path)
     (catch java.io.FileNotFoundException _
       (message "Using internal " path)
       (slurp-resource path continue-on-failure?))))
-
-(defn encode-anchor [s]
-  (java.net.URLEncoder/encode (.replaceAll s "\\s" "-") "UTF-8"))
-
-(defmacro with-out-stream [out &amp; body]
+</pre>
+<a id='src/me/panzoo/story.clj/encode-anchor'></a>
+<pre class='brush: clojure'>(defn encode-anchor
+  "Encode s for use as a fragment identifier."
+  [s]
+  (.replaceAll
+    (if (some #{\/} s) s (str *path* "/" s))
+    "\\s" "-"))
+</pre>
+<a id='src/me/panzoo/story.clj/normalize-anchor'></a>
+<pre class='brush: clojure'>(defn normalize-anchor
+  [s]
+  "Encode s using encode-anchor and ensure it is qualified by file path."
+  (encode-anchor (if (some #{\/} s) s (str *path* "/" s))))
+</pre>
+<a id='src/me/panzoo/story.clj/html-escape'></a>
+<pre class='brush: clojure'>(defn html-escape
+  "Escape s for inclusion in HTML."
+  [s]
+  (string/escape
+    s
+    {\&lt; "&amp;lt;"
+     \&gt; "&amp;gt;"
+     \&amp; "&amp;amp;"}))
+</pre>
+<a id='src/me/panzoo/story.clj/with-out-stream'></a>
+<pre class='brush: clojure'>(defmacro with-out-stream
+  "Wrap an output stream using clojure.java.io/writer bind it to *out*, then
+  execute body."
+  [out &amp; body]
   `(with-open [w# (io/writer ~out)]
      (binding [*out* w#]
        ~@body)))
+</pre>
+<a id='src/me/panzoo/story.clj/canonical-lang'></a>
+<pre class='brush: clojure'>(defn canonical-lang
+  "Given a language keyword, return its canonical equivalent."
+  [l]
+  (let [k (keyword l)]
+    (get language-aliases k k)))
+</pre>
+<a id='src/me/panzoo/story.clj/lang-info'></a>
+<pre class='brush: clojure'>(defn lang-info
+  "Given a language keyword, return its information as a vector pair of
+  comment syntax and SyntaxHighlighter brush name."
+  [l]
+  (languages (canonical-lang l)))
+</pre>
+<a id='src/me/panzoo/story.clj/lang-comment'></a>
+<pre class='brush: clojure'>(defn lang-comment
+  "Given a language keyword, return its comment syntax."
+  [l]
+  (first (lang-info l)))
+</pre>
+<a id='src/me/panzoo/story.clj/lang-brush'></a>
+<pre class='brush: clojure'>(defn lang-brush
+  "Given a language keyword, return its default SyntaxHighlighter brush name."
+  [l]
+  (second (lang-info l)))
 
 </pre>
-<a id='Regular-expression-helpers'></a>
+<a id='src/me/panzoo/story.clj/Regular-expression-helpers'></a>
 <h3>Regular expression helpers</h3>
-<pre class='brush: clj'>
-(defn comment
+<a id='src/me/panzoo/story.clj/comment'></a>
+<pre class='brush: clojure'>(defn comment
   "A regular expression matching the beginning of a commented line."
   []
   (re-pattern (str "^" (Pattern/quote *single-comment*) " ?")))
-
-(defn anchor
+</pre>
+<a id='src/me/panzoo/story.clj/hidden-comment'></a>
+<pre class='brush: clojure'>(defn hidden-comment
+  "A regular expression matching the beginning of a commented line that will
+  not appear in the output."
+  []
+  (re-pattern (str "^\\s+" (Pattern/quote *single-comment*))))
+</pre>
+<a id='src/me/panzoo/story.clj/anchor'></a>
+<pre class='brush: clojure'>(defn anchor
   "A regular expression matching the beginning of an anchor line."
   []
   (re-pattern (str (comment) "@ *")))
-
-(defn heading
+</pre>
+<a id='src/me/panzoo/story.clj/heading'></a>
+<pre class='brush: clojure'>(defn heading
   "A regular expression matching the beginning of a heading line."
   []
   (re-pattern (str (comment) "#+ *")))
-
-(defn include
+</pre>
+<a id='src/me/panzoo/story.clj/include'></a>
+<pre class='brush: clojure'>(defn include
   "A regular expression matching the beginning of an include line."
   []
   (re-pattern (str (comment) "%include +")))
 
 </pre>
-<a id='Parsing'></a>
-<h2>Parsing</h2><p>Each line of a source file will be either code, comment, anchor, or include. Headings are treated as both anchors and comments.</p>
-<pre class='brush: clj'>(defn classify-line
-  "Classify a line as :code or :comment. Return a pair of the classification
-  and line string, sans leading comment tokens in the case of a comment."
-  [line]
-  (letfn [(match? [reg] (re-find (reg) line))]
-    (concat
-      (cond-let [match]
-        (match? include) [[:include (string/split
-                                      (.substring line (count match)) #"\s+")]]
-        (match? anchor) [[:anchor (.substring line (count match))]]
-        (match? heading) [[:anchor (.substring line (count match))]
-                          [:comment (.substring
-                                      line (count (match? comment)))]]
-        (match? comment) [[:comment (.substring line (count match))]]
-        :else [[:code line]]))))
+<a id='src/me/panzoo/story.clj/Parsing'></a>
+<h2>Parsing</h2><p>Parsing is done by looping through a lazy list of lines. A character stream backed by that lazy list is used when reading across lines is necessary. See the <code>:else</code> case in <a href="#src/me/panzoo/story.clj/classify-line">classify-line</a> and <a href="#src/me/panzoo/story.clj/code-anchor-id-:clojure">code-anchor-id :clojure</a> for an example.</p><p>The entry-point for parsing is the <a href="#src/me/panzoo/story.clj/gather-lines">gather-lines</a> function at the end of this section.</p>
+<a id='src/me/panzoo/story.clj/lines-reader'></a>
+<pre class='brush: clojure'>(defn lines-reader [lines]
+  (let [lines-left (atom (interpose "\n" (filter seq lines)))]
+    (java.io.PushbackReader.
+      (proxy [java.io.Reader] []
+        (close [])
+        (read
 </pre>
-<p>Adjacent lines of the same classification need to be gathered together into a single string except for anchors and includes.</p>
-<pre class='brush: clj'>(defn gather-lines- [lines]
+<p>The clojure reader only calls the zero arity read method. Punting on implementing the other arities for now.</p>
+<pre class='brush: clojure'>          ([]
+           (let [ll @lines-left
+                 line (first ll)
+                 c (first line)]
+             (reset! lines-left
+                     (if (seq (rest line))
+                       (cons (subs line 1) (rest ll))
+                       (rest ll)))
+             (if c (int c) -1))))))))
+</pre>
+<p>Anchors for definitions are generated using the current line and a reader from the current line. Methods are expected to return a string identifying the definition, or <code>nil</code> if there is no definition beginning at the current line. The default method unconditionally returns <code>nil</code>.</p>
+<a id='src/me/panzoo/story.clj/code-anchor-id'></a>
+<pre class='brush: clojure'>(defmulti code-anchor-id
+  "If the current line (or reader) begins a definition, return the definition
+  name, otherwise return nil."
+  (fn [line reader] *language*)
+  :default :default)
+</pre>
+<a id='src/me/panzoo/story.clj/code-anchor-id-:default'></a>
+<pre class='brush: clojure'>(defmethod code-anchor-id :default [_ _] nil)
+</pre>
+<p>The clojure method uses the clojure reader, which should be more robust than methods which use regular expressions.</p>
+<a id='src/me/panzoo/story.clj/code-anchor-id-:clojure'></a>
+<pre class='brush: clojure'>(defmethod code-anchor-id :clojure [line reader]
+  (when (re-find #"^\(" line)
+    (let [code (read reader)]
+      (cond
+        (= 'defmethod (first code))
+        (str (second code) " " (nth code 2))
+
+        (re-find #"^def" (str (first code)))
+        (name (second code))
+
+        :else nil))))
+</pre>
+<p>Not all of these methods are well tested, like this javascript one.</p>
+<a id='src/me/panzoo/story.clj/code-anchor-id-:javascript'></a>
+<pre class='brush: clojure'>(defmethod code-anchor-id :javascript [line reader]
+  (or (second (re-find #"^\s*function\s+([^\s\(]+)" line))
+      (second (re-find #"^var\s+([A-Za-z_][A-Za-z_0-9]*)\s*=\s*function[\s\(]" line))
+      (second (re-find #"^\s*'?([A-Za-z_][A-Za-z_0-9]*)'?\s*:\s*function[\s\(]" line))))
+</pre>
+<a id='src/me/panzoo/story.clj/code-anchor-id-:vim'></a>
+<pre class='brush: clojure'>(defmethod code-anchor-id :vim [line reader]
+  (second (re-find #"^function!?\s+([a-zA-Z_][a-zA-Z_0-9]*)" line)))
+</pre>
+<p>The line parser emits a list of <code>[&lt;classification&gt; &lt;data&gt;]</code> pairs. This function calls <a href="#src/me/panzoo/story.clj/code-anchor-id">code-anchor-id</a> and returns an <code>[:anchor &lt;id&gt;]</code> pair. It also stores the anchor information for future use by <a href="#src/me/panzoo/story.clj/code-anchor-toc">code-anchor-toc</a>, which generates a table of contents for definitions with anchors.</p>
+<a id='src/me/panzoo/story.clj/maybe-code-anchor'></a>
+<pre class='brush: clojure'>(defn maybe-code-anchor
+  "If the current line (or reader) begins a definition, store the definition
+  name in *code-anchors* with the current file path as its key. Return the
+  path qualified id, or return nil."
+  [line reader]
+  (if-let [id (code-anchor-id line reader)]
+    (do
+      (swap! *code-anchors*
+             (fn [old]
+               (update-in old [*path*] #(conj (or % []) id))))
+      [[:anchor (str *path* "/" id)]])
+    []))
+</pre>
+<p>Each line of a source file will be either code, comment, anchor, or include. Headings are treated as both anchors and comments.</p>
+<a id='src/me/panzoo/story.clj/classify-line'></a>
+<pre class='brush: clojure'>(defn classify-line
+  "Classify the first line in lines. Commented lines prefixed by white space
+  are ignored. Returns a vector containing a single pair of the form
+  [&lt;classification&gt; &lt;data&gt;], where &lt;data&gt; is a string except in the case of an
+  include where it is a vector of [&lt;path&gt; &amp; [&lt;comment-syntax&gt; &lt;language&gt;]]."
+  [[line :as lines]]
+  (letfn [(match? [reg] (re-find (reg) line))]
+    (cond-let
+      [match]
+      (match? include) [[:include (string/split
+                                    (.substring line (count match)) #"\s+")]]
+      (match? anchor) [[:anchor (.substring line (count match))]]
+      (match? heading) [[:anchor (.substring line (count match))]
+                        [:comment (.substring
+                                    line (count (match? comment)))]]
+      (match? comment) [[:comment (.substring line (count match))]]
+      (match? hidden-comment) []
+      :else (conj (maybe-code-anchor line (lines-reader lines))
+                  [:code line]))))
+</pre>
+<p>Each line is classified lazily.</p>
+<a id='src/me/panzoo/story.clj/classify-lines'></a>
+<pre class='brush: clojure'>(defn classify-lines
+  "Classify each line in lines as :code, :comment, :anchor, or :include.
+  Returns a lazy list of [&lt;classification&gt; &lt;data&gt;] pairs. See classify-line for
+  more detail."
+  [lines]
+  (lazy-seq
+    (when (seq lines)
+      (concat (classify-line lines) (classify-lines (rest lines))))))
+</pre>
+<p>Adjacent lines of the same classification need to be gathered together into a single string (except for anchors and includes).</p>
+<a id='src/me/panzoo/story.clj/gather-lines-'></a>
+<pre class='brush: clojure'>(defn gather-lines-
+  [lines]
   (lazy-seq
     (when-let [classfn (first (first lines))]
       (if (#{:comment :code} classfn)
@@ -2886,100 +3140,130 @@ level variables</a> section depending on whether the file suffixes are in the <a
               text (string/join "\n" (map second same))]
           (cons [classfn text] (gather-lines- tail)))
         (cons (first lines) (gather-lines- (rest lines)))))))
-
-(defn gather-lines [lines]
-  (gather-lines- (apply concat (map classify-line lines))))
 </pre>
-<p>The result of gathering is a list of pairs of the form <code>[&lt;classification&gt; &lt;data&gt;]</code>.</p>
-<a id='Rendering'></a>
-<h2>Rendering</h2><p>The method that transforms each classified chunk into HTML, dispatches on the classification.</p>
-<pre class='brush: clj'>(defmulti html&lt;- first)
+<p>The entry-point for parsing is this <code>gather-lines</code> function.</p>
+<a id='src/me/panzoo/story.clj/gather-lines'></a>
+<pre class='brush: clojure'>(defn gather-lines
+  "Join adjacent strings of the same classification together (except :anchor
+  and :include). Return a lazy list of [&lt;classification&gt; &lt;data&gt;] pairs. See
+  classify-line for more detail."
+  [lines]
+  (gather-lines- (classify-lines lines)))
+
+</pre>
+<a id='src/me/panzoo/story.clj/Rendering'></a>
+<h2>Rendering</h2><p>The method that transforms each classified chunk into HTML, dispatches on the classification of each item in the list returned by <a href="#src/me/panzoo/story.clj/gather-lines">gather-lines</a>.</p>
+<a id='src/me/panzoo/story.clj/html<-'></a>
+<pre class='brush: clojure'>(defmulti html&lt;- first)
 </pre>
 <p>SyntaxHighlighter brushes are associated with files if the language is supplied or can be worked out from the file suffix.</p>
-<pre class='brush: clj'>(defn maybe-associate-brush [path lang]
-  (when-let [b (and lang (second (languages lang)))]
+<a id='src/me/panzoo/story.clj/maybe-associate-brush'></a>
+<pre class='brush: clojure'>(defn maybe-associate-brush [path lang]
+  (when-let [b (and lang (lang-brush lang))]
     (when-not (@*brushes* b)
       (message "Associating "path " with brush " b)
       (swap! *brushes* conj b))))
 </pre>
 <p>The output of each file is wrapped in <code>article</code> or <code>section</code> tags. Article tags for top-level files and section tags for included ones.</p>
-<pre class='brush: clj'>(defmacro wrap-in-tags [tag &amp; body]
+<a id='src/me/panzoo/story.clj/wrap-in-tags'></a>
+<pre class='brush: clojure'>(defmacro wrap-in-tags [tag &amp; body]
   `(do
-     (println (str "&lt;" ~tag "&gt;"))
+     (print ~tag)
      ~@body
-     (println (str "&lt;/" ~tag "&gt;"))))
-
-(defn render-file [tag path &amp; [token lang]]
+     (print (str "&lt;/" (re-find #"(?&lt;=^&lt;)[^\s&gt;]+" ~tag) "&gt;"))))
+</pre>
+<a id='src/me/panzoo/story.clj/render-file'></a>
+<pre class='brush: clojure'>(defn render-file [tag path &amp; [token lang]]
 </pre>
 <p>For each file, new bindings are made for comment syntax and language. If the language or comment syntax (<code>token</code>) are not supplied, they are guessed from the <code>path</code> suffix, and if that fails they are set to the values they have in the enclsing dynamic scope (i.e., from the commandline or the including file).</p>
-<pre class='brush: clj'>  (binding [*language* (or lang
-                           (re-find #"(?&lt;=\.)[^.]+$" path)
-                           *language*)]
+<pre class='brush: clojure'>  (binding [*language* (canonical-lang
+                         (or lang
+                             (re-find #"(?&lt;=\.)[^.]+$" path)
+                             *language*))]
     (binding [*single-comment* (or token
-                                   (first (languages *language*))
+                                   (lang-comment *language*)
                                    *single-comment*)]
-      (wrap-in-tags tag
-        (if (#{"markdown" "md"} *language*)
+      (binding [*path* path]
+        (wrap-in-tags tag
+          (if (#{:markdown :md} *language*)
 </pre>
 <p>A markdown file is a special case. It is treated as a single comment block.</p>
-<pre class='brush: clj'>          (html&lt;- [:comment (slurp path)])
-          (do
-            (maybe-associate-brush path *language*)
-            (with-open [r (io/reader path)]
+<pre class='brush: clojure'>            (html&lt;- [:comment (slurp path)])
+            (do
+              (maybe-associate-brush path *language*)
+              (with-open [r (io/reader path)]
 </pre>
 <p>Lines of source code are read lazily by <code>line-seq</code> and gathered lazily by <code>gather-lines</code>, Along with printing each chunk of comment or code to an output stream, this ensures that the maximum memory used by this program will be determined by the largest comment or code chunk and not the total size of the source file.</p>
-<pre class='brush: clj'>              (each html&lt;- (gather-lines (line-seq r))))))))))
+<pre class='brush: clojure'>                (each html&lt;- (gather-lines (line-seq r)))))))))))
 </pre>
 <p>Code chunks are wrapped in a <code>pre</code> with the correct incantation for SyntaxHighlighter in its <code>class</code> attribute; comments are run through the Markdown processor; anchors become hrefless HTML anchors; and includes wrap the result of parsing and rendering the file they point to in <code>section</code> tags.</p>
-<pre class='brush: clj'>
-(defmethod html&lt;- :code [[_ text]]
+<a id='src/me/panzoo/story.clj/html<--:code'></a>
+<pre class='brush: clojure'>(defmethod html&lt;- :code [[_ text]]
   (when-not (string/blank? text)
-    (println (str "&lt;pre class='brush: " *language* "'&gt;"
-                  (string/escape
-                    text
-                    {\&lt; "&amp;lt;"
-                     \&gt; "&amp;gt;"
-                     \&amp; "&amp;amp;"})
+    (println (str "&lt;pre class='brush: " (name *language*) "'&gt;"
+                  (html-escape text)
                   "&lt;/pre&gt;"))))
-
-(defmethod html&lt;- :comment [[_ text]]
+</pre>
+<a id='src/me/panzoo/story.clj/html<--:comment'></a>
+<pre class='brush: clojure'>(defmethod html&lt;- :comment [[_ text]]
   (println (.markdownToHtml processor text link-renderer)))
-
-(defmethod html&lt;- :anchor [[_ text]]
-  (println (str "&lt;a id='" (encode-anchor text) "'&gt;&lt;/a&gt;")))
-
-(defmethod html&lt;- :include [[_ [path &amp; [token lang]] :as args]]
+</pre>
+<a id='src/me/panzoo/story.clj/html<--:anchor'></a>
+<pre class='brush: clojure'>(defmethod html&lt;- :anchor [[_ text]]
+  (println (str "&lt;a id='" (normalize-anchor text) "'&gt;&lt;/a&gt;")))
+</pre>
+<a id='src/me/panzoo/story.clj/html<--:include'></a>
+<pre class='brush: clojure'>(defmethod html&lt;- :include [[_ [path &amp; [token lang]] :as args]]
   (let [lang (or lang (re-find #"(?&lt;=\.)[^.]+$" path))]
-    (render-file "section" path token lang)))
+    (render-file "&lt;section&gt;" path token lang)))
 
 </pre>
-<a id='Look-and-feel'></a>
-<h2>Look and feel</h2><p>All javascript and CSS are inlined in the output.</p>
-<pre class='brush: clj'>
-(defn inline-js [s]
+<a id='src/me/panzoo/story.clj/Look-and-feel'></a>
+<h2>Look and feel</h2><p>A TOC is created for code anchors.</p>
+<a id='src/me/panzoo/story.clj/code-anchor-toc'></a>
+<pre class='brush: clojure'>(defn code-anchor-toc []
+  (wrap-in-tags "&lt;div id='code-anchors'&gt;"
+    (wrap-in-tags "&lt;ul&gt;"
+      (doseq [[path ids] (reverse @*code-anchors*)]
+        (wrap-in-tags "&lt;li&gt;"
+          (print (str path "&lt;br&gt;"))
+          (wrap-in-tags "&lt;ul&gt;"
+            (doseq [id (sort ids)]
+              (wrap-in-tags "&lt;li&gt;"
+                (wrap-in-tags (str "&lt;a href='#"
+                                   (encode-anchor (str path "/" id))
+                                   "'&gt;")
+                  (print (html-escape id)))))))))))
+</pre>
+<p>All javascript and CSS are inlined in the output.</p>
+<a id='src/me/panzoo/story.clj/inline-js'></a>
+<pre class='brush: clojure'>(defn inline-js [s]
   (println "&lt;script&gt;" s "&lt;/script&gt;"))
-
-(defn inline-css [s]
+</pre>
+<a id='src/me/panzoo/story.clj/inline-css'></a>
+<pre class='brush: clojure'>(defn inline-css [s]
   (println "&lt;style&gt;" s "&lt;/style&gt;"))
 </pre>
 <p>SyntaxHighlighter brushes can be set and the default theme (<code>shThemeEclipse.css</code>) overridden on the commandline. An additional stylesheet can also be set.</p><p>Because lack of brush or theme will not materially affect the structure of the output page, failure to load one or more of them will not cause the program to halt, though it will be logged to standard-error.</p>
-<pre class='brush: clj'>
-(defn inline-brushes []
+<a id='src/me/panzoo/story.clj/inline-brushes'></a>
+<pre class='brush: clojure'>(defn inline-brushes []
   (message "Adding the following brushes to output:")
   (each (partial message "    ") @*brushes*)
   (each inline-js
         (filter identity
                 (map #(slurp-file|resource % :continue-on-failure)
                      @*brushes*))))
-
-(defn inline-theme []
+</pre>
+<a id='src/me/panzoo/story.clj/inline-theme'></a>
+<pre class='brush: clojure'>(defn inline-theme []
   (when-let [s (and (:theme *settings*)
                     (slurp-file|resource
                       (:theme *settings*)
                       :continue-on-faliure))]
     (inline-css s)))
-
-(defn inline-stylesheet []
+</pre>
+<a id='src/me/panzoo/story.clj/inline-stylesheet'></a>
+<pre class='brush: clojure'>(defn inline-stylesheet []
   (when-let [s (and (:stylesheet *settings*)
                     (slurp-file|resource
                       (:stylesheet *settings*)
@@ -2987,7 +3271,8 @@ level variables</a> section depending on whether the file suffixes are in the <a
     (inline-css s)))
 </pre>
 <p>The resulting look-and-feel resources are included together.</p>
-<pre class='brush: clj'>(defn look-and-feel []
+<a id='src/me/panzoo/story.clj/look-and-feel'></a>
+<pre class='brush: clojure'>(defn look-and-feel []
   (inline-js (slurp-resource "XRegExp.js"))
   (inline-js (slurp-resource "shCore.js"))
   (inline-theme)
@@ -2995,58 +3280,39 @@ level variables</a> section depending on whether the file suffixes are in the <a
   (inline-css (slurp-resource "page.css"))
   (inline-stylesheet))
 </pre>
-<p>SyntaxHighlighter&rsquo;s defaults are not suitable, so they are tweaked.</p>
-<pre class='brush: clj'>(defn syntax-highlighter-setup []
-  (inline-js
-    (str "SyntaxHighlighter.defaults['toolbar'] = false;"
-         "SyntaxHighlighter.defaults['smart-tabs'] = false;"
-         "SyntaxHighlighter.defaults['gutter'] = false;"
-         "SyntaxHighlighter.defaults['unindent'] = false;"
-         "SyntaxHighlighter.defaults['class-name'] = 'code';"
-         "SyntaxHighlighter.all();")))
+<p>Javascript configuration and entry-point for SyntaxHighlighter and TOC outline are included from an external resource.</p>
+<a id='src/me/panzoo/story.clj/javascript-setup'></a>
+<pre class='brush: clojure'>(defn javascript-setup []
+  (inline-js (slurp-resource "page.js")))
+
 </pre>
-<p><a href="http://code.google.com/p/h5o/">h50</a>, the HTML5 outliner is used to create a table of contents.</p>
-<pre class='brush: clj'>(defn outliner-setup []
-  (println "&lt;div id=outline&gt;&lt;/div&gt;")
-  (inline-js
-    (str "var outline = document.getElementById('outline');"
-         "outline.innerHTML = HTML5Outline(document.body).asHTML(true);"
-         "var children = outline.firstElementChild.firstElementChild.children;"
-         "outline.removeChild(outline.firstElementChild);"
-         "for (var i = 1; i &lt; children.length; ++i) {"
-         "  outline.appendChild(children[i]);"
-         "}")))
-</pre>
-<p>And here the two scripts are combined.</p>
-<pre class='brush: clj'>(defn javascript-setup []
-  (syntax-highlighter-setup)
-  (outliner-setup))
-    
-</pre>
-<a id='Output'></a>
+<a id='src/me/panzoo/story.clj/Output'></a>
 <h2>Output</h2><p>The output is HTML5 which is why no <code>html</code>, <code>head</code>, or <code>body</code> tags are present. The order of things in the output file is fairly normal for HTML: style and behaviour information first, followed by visible content, followed by the javascript entry-point.</p>
-<pre class='brush: clj'>(defn render-files- [paths]
+<a id='src/me/panzoo/story.clj/render-files-'></a>
+<pre class='brush: clojure'>(defn render-files- [paths]
   (println
     "&lt;!doctype html&gt;"
     "&lt;meta charset=utf-8&gt;")
   (look-and-feel)
 </pre>
 <p>Multiple input files are rendered to a single stream. The content of each file&rsquo;s rendering is wrapped in its own <code>article</code> tags.</p>
-<pre class='brush: clj'>  (each (partial render-file "article") paths)
+<pre class='brush: clojure'>  (each (partial render-file "&lt;article&gt;") paths)
+  (code-anchor-toc)
   (inline-brushes)
   (javascript-setup))
 </pre>
-<a id='render-files'></a>
-<pre class='brush: clj'>(defn render-files [paths]
+<a id='src/me/panzoo/story.clj/render-files'></a>
+<pre class='brush: clojure'>(defn render-files [paths]
 </pre>
-<p><code>*brushes*</code> is rebound on every invocation of <code>render-files</code>, because if it was not, unneeded brushes could accumulate and be included on subsequent calls to <code>render-files</code>.</p>
-<pre class='brush: clj'>  (binding [*brushes* (atom (or (set (:static-brushes *settings*)) #{})
-                            :validator #(not (some (comp not string?) %)))]
+<p><a href="#src/me/panzoo/story.clj/*brushes*">*brushes*</a> and <a href="#src/me/panzoo/story.clj/*code-anchors*">*code-anchors*</a> are rebound on every invocation of <code>render-files</code> to prevent unneeded brushes and anchors accumulating across calls.</p>
+<pre class='brush: clojure'>  (binding [*brushes* (atom (or (set (:static-brushes *settings*)) #{})
+                            :validator #(not (some (comp not string?) %)))
+            *code-anchors* (atom (array-map))]
     (render-files- paths)))
 </pre>
-<p>The output stream can be a file or standard output or anything <code>clojure.java.io/writer</code> can handle.</p>
-<a id='process-files'></a>
-<pre class='brush: clj'>(defn process-files
+<p>The program entry-point takes a list of paths to input files and a single output stream which can also be a file path or anything <code>clojure.java.io/writer</code> can handle.</p>
+<a id='src/me/panzoo/story.clj/process-files'></a>
+<pre class='brush: clojure'>(defn process-files
   "Take a list of file paths and an output stream, and render each file to the
   stream as HTML."
   [in-paths out]
@@ -3054,16 +3320,18 @@ level variables</a> section depending on whether the file suffixes are in the <a
     (render-files in-paths)))
 
 </pre>
-<a id='Commandline'></a>
+<a id='src/me/panzoo/story.clj/Commandline'></a>
 <h2>Commandline</h2><p>Use this program from the commandline like so.</p>
-<pre class='brush: clj'>(def usage "Usage: java -jar story.jar [options] &lt;input-files&gt;")
-
-(defn -main [&amp; args]
+<a id='src/me/panzoo/story.clj/usage'></a>
+<pre class='brush: clojure'>(def usage "Usage: java -jar story.jar [options] &lt;input-files&gt;")
+</pre>
+<a id='src/me/panzoo/story.clj/-main'></a>
+<pre class='brush: clojure'>(defn -main [&amp; args]
   (let [[amap tail banner]
         (cli/cli args
 </pre>
 <p>Here is a list of the options this program can take when run from the commandline.</p>
-<pre class='brush: clj'>                 ["-c" "--comment" "Comment syntax"]
+<pre class='brush: clojure'>                 ["-c" "--comment" "Comment syntax"]
                  ["-b" "--brush" "SyntaxHighlighter brush file" :multi true]
                  ["-t" "--theme" "SyntaxHighlighter theme file"]
                  ["-l" "--language" "SyntaxHighlighter language"]
@@ -3073,7 +3341,7 @@ level variables</a> section depending on whether the file suffixes are in the <a
                  ["-h" "--help" "Show this help" :default false :flag true])]
 </pre>
 <p>For the brush, theme, and stylesheet options the program first tries to read from the filesystem and if that fails because the file is not found then an attempt is made to read from the program&rsquo;s resources. The resources contain the standard SyntaxHighlighter brushes and themes under their normal file names including an additional <code>shBrushClojure.js</code> and <code>shThemeClojure.css</code>.</p><p>Multiple brushes can be used by repeating the <code>-b</code> or <code>--brush</code> options. Additional brushes may be added by the program as a result of file includes and file suffixes.</p>
-<pre class='brush: clj'>    (if (or (not (seq tail)) (:help amap))
+<pre class='brush: clojure'>    (if (or (not (seq tail)) (:help amap))
       (do (println (str usage "\n" banner))
         (System/exit 1))
       (binding [*settings* {:theme (or (:theme amap) (:theme *settings*))
@@ -3081,16 +3349,41 @@ level variables</a> section depending on whether the file suffixes are in the <a
                             :static-brushes (:brush amap)
                             :verbose? (:verbose amap)}
                 *single-comment* (:comment amap)
-                *language* (or (:language amap) *language*)]
+                *language* (canonical-lang (or (:language amap) *language*))]
 </pre>
 <p>When no output file is given, the program renders to standard-out.</p>
-<pre class='brush: clj'>        (if (= 1 (count tail))
+<pre class='brush: clojure'>        (if (= 1 (count tail))
           (process-files tail *out*)
           (process-files (butlast tail) (last tail)))))))</pre>
-</section>
-<section>
-<a id='Code-folding-for-Vim'></a>
+</section><section><a id='resources/page.js/Javascript-setup'></a>
+<h1>Javascript setup</h1><p>This setup code is placed in a function purely to test/show-off story&rsquo;s anchor generation.</p>
+<a id='resources/page.js/me_panzoo_story_setup'></a>
+<pre class='brush: javascript'>function me_panzoo_story_setup() {
+</pre>
+<p>SyntaxHighlighter&rsquo;s defaults are not suitable, so they are tweaked.</p>
+<pre class='brush: javascript'>  SyntaxHighlighter.defaults['toolbar'] = false;
+  SyntaxHighlighter.defaults['smart-tabs'] = false;
+  SyntaxHighlighter.defaults['gutter'] = false;
+  SyntaxHighlighter.defaults['unindent'] = false;
+  SyntaxHighlighter.defaults['class-name'] = 'code';
+  SyntaxHighlighter.all();
+</pre>
+<p><a href="http://code.google.com/p/h5o/">h50</a>, the HTML5 outliner is used to create a table of contents.</p>
+<pre class='brush: javascript'>  var outline = document.createElement('div');
+  outline.setAttribute('id', 'outline');
+  outline.innerHTML = HTML5Outline(document.body).asHTML(true);
+  var children = outline.firstElementChild.firstElementChild.children;
+  outline.removeChild(outline.firstElementChild);
+  for (var i = 1; i &lt; children.length; ++i) {
+    outline.appendChild(children[i]);
+  }
+  document.body.appendChild(outline);
+}
+
+me_panzoo_story_setup();</pre>
+</section><section><a id='folding.vim/Code-folding-for-Vim'></a>
 <h1>Code folding for Vim</h1><p>Add this code to your <code>~/.vimrc</code> to enable folding of Markdown files and source files with Markdown comments.</p><p>The fold level is determined by the number of <code>#</code> at the start of each heading. Underlined headings are not supported.</p>
+<a id='folding.vim/MarkdownLevel'></a>
 <pre class='brush: vim'>function! MarkdownLevel(token)
   let level = strlen(matchstr(getline(v:lnum),
         \                     '\(^'.a:token.'\)\@&lt;=#\+\( \)\@='))
@@ -3118,10 +3411,45 @@ au BufEnter *.sh setlocal foldexpr=MarkdownLevel(comment#hash)
 au BufEnter *.vim setlocal foldexpr=MarkdownLevel(comment#dblquote)
 
 </pre>
-<a id='Key-bindings'></a>
+<a id='folding.vim/Key-bindings'></a>
 <h2>Key bindings</h2><p><code>za</code> toggle current fold<br/><code>zR</code> open all folds<br/><code>zM</code> close all folds<br/><code>zr</code> open one more level of folds<br/><code>zm</code> close one more level of folds </p>
-</section>
-</article>
+</section></article><div id='code-anchors'><ul><li>project.clj<br><ul><li><a href='#project.clj/story'>story</a></li></ul></li><li>src/me/panzoo/story.clj<br><ul><li><a href='#src/me/panzoo/story.clj/*brushes*'>*brushes*</a></li><li><a href='#src/me/panzoo/story.clj/*code-anchors*'>*code-anchors*</a></li><li><a href='#src/me/panzoo/story.clj/*language*'>*language*</a></li><li><a href='#src/me/panzoo/story.clj/*path*'>*path*</a></li><li><a href='#src/me/panzoo/story.clj/*settings*'>*settings*</a></li><li><a href='#src/me/panzoo/story.clj/*single-comment*'>*single-comment*</a></li><li><a href='#src/me/panzoo/story.clj/-main'>-main</a></li><li><a href='#src/me/panzoo/story.clj/anchor'>anchor</a></li><li><a href='#src/me/panzoo/story.clj/canonical-lang'>canonical-lang</a></li><li><a href='#src/me/panzoo/story.clj/classify-line'>classify-line</a></li><li><a href='#src/me/panzoo/story.clj/classify-lines'>classify-lines</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id'>code-anchor-id</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:clojure'>code-anchor-id :clojure</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:default'>code-anchor-id :default</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:javascript'>code-anchor-id :javascript</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:vim'>code-anchor-id :vim</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-toc'>code-anchor-toc</a></li><li><a href='#src/me/panzoo/story.clj/comment'>comment</a></li><li><a href='#src/me/panzoo/story.clj/cond-let'>cond-let</a></li><li><a href='#src/me/panzoo/story.clj/each'>each</a></li><li><a href='#src/me/panzoo/story.clj/encode-anchor'>encode-anchor</a></li><li><a href='#src/me/panzoo/story.clj/gather-lines'>gather-lines</a></li><li><a href='#src/me/panzoo/story.clj/gather-lines-'>gather-lines-</a></li><li><a href='#src/me/panzoo/story.clj/heading'>heading</a></li><li><a href='#src/me/panzoo/story.clj/hidden-comment'>hidden-comment</a></li><li><a href='#src/me/panzoo/story.clj/html-escape'>html-escape</a></li><li><a href='#src/me/panzoo/story.clj/html<-'>html&lt;-</a></li><li><a href='#src/me/panzoo/story.clj/html<--:anchor'>html&lt;- :anchor</a></li><li><a href='#src/me/panzoo/story.clj/html<--:code'>html&lt;- :code</a></li><li><a href='#src/me/panzoo/story.clj/html<--:comment'>html&lt;- :comment</a></li><li><a href='#src/me/panzoo/story.clj/html<--:include'>html&lt;- :include</a></li><li><a href='#src/me/panzoo/story.clj/include'>include</a></li><li><a href='#src/me/panzoo/story.clj/inline-brushes'>inline-brushes</a></li><li><a href='#src/me/panzoo/story.clj/inline-css'>inline-css</a></li><li><a href='#src/me/panzoo/story.clj/inline-js'>inline-js</a></li><li><a href='#src/me/panzoo/story.clj/inline-stylesheet'>inline-stylesheet</a></li><li><a href='#src/me/panzoo/story.clj/inline-theme'>inline-theme</a></li><li><a href='#src/me/panzoo/story.clj/javascript-setup'>javascript-setup</a></li><li><a href='#src/me/panzoo/story.clj/lang-brush'>lang-brush</a></li><li><a href='#src/me/panzoo/story.clj/lang-comment'>lang-comment</a></li><li><a href='#src/me/panzoo/story.clj/lang-info'>lang-info</a></li><li><a href='#src/me/panzoo/story.clj/language-aliases'>language-aliases</a></li><li><a href='#src/me/panzoo/story.clj/languages'>languages</a></li><li><a href='#src/me/panzoo/story.clj/lines-reader'>lines-reader</a></li><li><a href='#src/me/panzoo/story.clj/link-renderer'>link-renderer</a></li><li><a href='#src/me/panzoo/story.clj/look-and-feel'>look-and-feel</a></li><li><a href='#src/me/panzoo/story.clj/maybe-associate-brush'>maybe-associate-brush</a></li><li><a href='#src/me/panzoo/story.clj/maybe-code-anchor'>maybe-code-anchor</a></li><li><a href='#src/me/panzoo/story.clj/message'>message</a></li><li><a href='#src/me/panzoo/story.clj/normalize-anchor'>normalize-anchor</a></li><li><a href='#src/me/panzoo/story.clj/process-files'>process-files</a></li><li><a href='#src/me/panzoo/story.clj/processor'>processor</a></li><li><a href='#src/me/panzoo/story.clj/render-file'>render-file</a></li><li><a href='#src/me/panzoo/story.clj/render-files'>render-files</a></li><li><a href='#src/me/panzoo/story.clj/render-files-'>render-files-</a></li><li><a href='#src/me/panzoo/story.clj/slurp-file|resource'>slurp-file|resource</a></li><li><a href='#src/me/panzoo/story.clj/slurp-resource'>slurp-resource</a></li><li><a href='#src/me/panzoo/story.clj/usage'>usage</a></li><li><a href='#src/me/panzoo/story.clj/with-out-stream'>with-out-stream</a></li><li><a href='#src/me/panzoo/story.clj/wrap-in-tags'>wrap-in-tags</a></li></ul></li><li>resources/page.js<br><ul><li><a href='#resources/page.js/me_panzoo_story_setup'>me_panzoo_story_setup</a></li></ul></li><li>folding.vim<br><ul><li><a href='#folding.vim/MarkdownLevel'>MarkdownLevel</a></li></ul></li></ul></div><script> ;(function()
+{
+	// CommonJS
+	typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;
+
+	function Brush()
+	{
+		var keywords =	'break case catch continue ' +
+						'default delete do else false  ' +
+						'for function if in instanceof ' +
+						'new null return super switch ' +
+						'this throw true try typeof var while with'
+						;
+
+		var r = SyntaxHighlighter.regexLib;
+		
+		this.regexList = [
+			{ regex: r.multiLineDoubleQuotedString,					css: 'string' },			// double quoted strings
+			{ regex: r.multiLineSingleQuotedString,					css: 'string' },			// single quoted strings
+			{ regex: r.singleLineCComments,							css: 'comments' },			// one line comments
+			{ regex: r.multiLineCComments,							css: 'comments' },			// multiline comments
+			{ regex: /\s*#.*/gm,									css: 'preprocessor' },		// preprocessor tags like #region and #endregion
+			{ regex: new RegExp(this.getKeywords(keywords), 'gm'),	css: 'keyword' }			// keywords
+			];
+	
+		this.forHtmlScript(r.scriptScriptTags);
+	};
+
+	Brush.prototype	= new SyntaxHighlighter.Highlighter();
+	Brush.aliases	= ['js', 'jscript', 'javascript'];
+
+	SyntaxHighlighter.brushes.JScript = Brush;
+
+	// CommonJS
+	typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
+})();
+ </script>
 <script> /**
  * SyntaxHighlighter
  * http://alexgorbatchev.com/
@@ -4133,6 +4461,32 @@ net.brehaut.ClojureTools = (function (SH) {
   };
 })(SyntaxHighlighter);
  </script>
-<script> SyntaxHighlighter.defaults['toolbar'] = false;SyntaxHighlighter.defaults['smart-tabs'] = false;SyntaxHighlighter.defaults['gutter'] = false;SyntaxHighlighter.defaults['unindent'] = false;SyntaxHighlighter.defaults['class-name'] = 'code';SyntaxHighlighter.all(); </script>
-<div id=outline></div>
-<script> var outline = document.getElementById('outline');outline.innerHTML = HTML5Outline(document.body).asHTML(true);var children = outline.firstElementChild.firstElementChild.children;outline.removeChild(outline.firstElementChild);for (var i = 1; i < children.length; ++i) {  outline.appendChild(children[i]);} </script>
+<script> // # Javascript setup
+//
+// This setup code is placed in a function purely to test/show-off story's
+// anchor generation.
+function me_panzoo_story_setup() {
+
+// SyntaxHighlighter's defaults are not suitable, so they are tweaked.
+  SyntaxHighlighter.defaults['toolbar'] = false;
+  SyntaxHighlighter.defaults['smart-tabs'] = false;
+  SyntaxHighlighter.defaults['gutter'] = false;
+  SyntaxHighlighter.defaults['unindent'] = false;
+  SyntaxHighlighter.defaults['class-name'] = 'code';
+  SyntaxHighlighter.all();
+
+// [h50](http://code.google.com/p/h5o/), the HTML5 outliner is used to create
+// a table of contents.
+  var outline = document.createElement('div');
+  outline.setAttribute('id', 'outline');
+  outline.innerHTML = HTML5Outline(document.body).asHTML(true);
+  var children = outline.firstElementChild.firstElementChild.children;
+  outline.removeChild(outline.firstElementChild);
+  for (var i = 1; i < children.length; ++i) {
+    outline.appendChild(children[i]);
+  }
+  document.body.appendChild(outline);
+}
+
+me_panzoo_story_setup();
+ </script>

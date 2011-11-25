@@ -22,6 +22,7 @@
   (:gen-class))
 
 (declare encode-anchor)
+(declare html-escape)
 
 ; ## Top level variables
 ;
@@ -45,7 +46,7 @@
    :verbose? false})
 
 
-; ### Per file
+; ### Per input file
 ;
 ; These variables are rebound for every input file.
 
@@ -61,10 +62,15 @@
   "The path of the file currently being processed."
   nil)
 
-; Brushes can be added by the program whenever a new file is processed. They
-; must be path strings. This variable is given a binding only in the
-; [[render-files]] function.
+
+; ### Per output stream
+;
+; These variables are given bindings only in the [[render-files]] function.
+;
+; Brushes can be added by the program whenever a new file is processed.
 (def ^:dynamic *brushes* nil)
+
+(def ^:dynamic *code-anchors* nil)
 
 
 ; ### Language map
@@ -172,7 +178,7 @@
   document fragments rather than external HTML pages."
   (letfn [(def-name [s] (re-find #"(?<=/)[^/]+$" s))
           (anchor-name [s]
-            (or (def-name s) s))]
+            (html-escape (or (def-name s) s)))]
     (proxy [LinkRenderer] []
       (render
         ([node]
@@ -258,6 +264,14 @@
     (if (some #{\/} s) s (str *path* "/" s))
     "\\s" "-"))
 
+(defn html-escape
+  [s]
+  (string/escape
+    s
+    {\< "&lt;"
+     \> "&gt;"
+     \& "&amp;"}))
+
 (defmacro with-out-stream [out & body]
   `(with-open [w# (io/writer ~out)]
      (binding [*out* w#]
@@ -332,7 +346,7 @@
   (when (re-find #"^\(" line)
     (let [code (read reader)]
       (and (re-find #"^def" (str (first code)))
-           (second code)))))
+           (name (second code))))))
 
 (defmethod code-anchor-id :vim [line reader]
   (second (re-find #"^function!?\s+([a-zA-Z_][a-zA-Z_0-9]+)" line)))
@@ -341,7 +355,11 @@
 
 (defn maybe-code-anchor [line reader]
   (if-let [id (code-anchor-id line reader)]
-    [[:anchor (str *path* "/" id)]]
+    (do
+      (swap! *code-anchors*
+             (fn [old]
+               (update-in old [*path*] #(conj (or % []) id))))
+      [[:anchor (str *path* "/" id)]])
     []))
 
 ; Each line of a source file will be either code, comment, anchor, or include.
@@ -407,9 +425,9 @@
 ; tags for top-level files and section tags for included ones.
 (defmacro wrap-in-tags [tag & body]
   `(do
-     (println (str "<" ~tag ">"))
+     (print ~tag)
      ~@body
-     (println (str "</" ~tag ">"))))
+     (print (str "</" (re-find #"(?<=^<)[^\s>]+" ~tag) ">"))))
 
 (defn render-file [tag path & [token lang]]
 
@@ -450,11 +468,7 @@
 (defmethod html<- :code [[_ text]]
   (when-not (string/blank? text)
     (println (str "<pre class='brush: " (name *language*) "'>"
-                  (string/escape
-                    text
-                    {\< "&lt;"
-                     \> "&gt;"
-                     \& "&amp;"})
+                  (html-escape text)
                   "</pre>"))))
 
 (defmethod html<- :comment [[_ text]]
@@ -465,11 +479,26 @@
 
 (defmethod html<- :include [[_ [path & [token lang]] :as args]]
   (let [lang (or lang (re-find #"(?<=\.)[^.]+$" path))]
-    (render-file "section" path token lang)))
+    (render-file "<section>" path token lang)))
 
 
 ; ## Look and feel
 ;
+; A TOC is created for code anchors.
+(defn code-anchor-toc []
+  (wrap-in-tags "<div id='code-anchors'>"
+    (wrap-in-tags "<ul>"
+      (doseq [[path ids] (reverse @*code-anchors*)]
+        (wrap-in-tags "<li>"
+          (print (str path "<br>"))
+          (wrap-in-tags "<ul>"
+            (doseq [id (sort ids)]
+              (wrap-in-tags "<li>"
+                (wrap-in-tags (str "<a href='#"
+                                   (encode-anchor (str path "/" id))
+                                   "'>")
+                  (print (html-escape id)))))))))))
+
 ; All javascript and CSS are inlined in the output.
 
 (defn inline-js [s]
@@ -560,17 +589,19 @@
 
 ; Multiple input files are rendered to a single stream. The content of each
 ; file's rendering is wrapped in its own `article` tags.
-  (each (partial render-file "article") paths)
+  (each (partial render-file "<article>") paths)
+  (code-anchor-toc)
   (inline-brushes)
   (javascript-setup))
 
 (defn render-files [paths]
 
-; `*brushes*` is rebound on every invocation of `render-files`, because if it
-; was not, unneeded brushes could accumulate and be included on subsequent
-; calls to `render-files`.
+; [[*brushes*]] and [[*code-anchors*]] are rebound on every invocation of
+; `render-files` to prevent unneeded brushes and anchors accumulating across
+; calls.
   (binding [*brushes* (atom (or (set (:static-brushes *settings*)) #{})
-                            :validator #(not (some (comp not string?) %)))]
+                            :validator #(not (some (comp not string?) %)))
+            *code-anchors* (atom (array-map))]
     (render-files- paths)))
 
 ; The output stream can be a file or standard output or anything

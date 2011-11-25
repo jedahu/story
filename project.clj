@@ -7,7 +7,7 @@
 ; [MarkDown]: http://daringfireball.net/projects/markdown/
 ; [SyntaxHighlighter]: http://alexgorbatchev.com/SyntaxHighlighter/
 (defproject
-  me.panzoo/story "0.0.2-SNAPSHOT"
+  me.panzoo/story "0.0.2"
 
   :description "A literate programming tool."
 

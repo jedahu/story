@@ -442,10 +442,15 @@
   []
   (re-pattern (str (comment) "%require +")))
 
-(defn testcode
-  "A regular expression matching the beginning of a test comment."
+(defn test-begin
+  "A regular expression matching a test-begin line."
   []
-  (re-pattern (str (comment) "\\? ")))
+  (re-pattern (str (comment) "<\\?")))
+
+(defn test-end
+  "A regular expression matching a test-end line."
+  []
+  (re-pattern (str (comment) "\\?>")))
 
 
 ; ## Parsing
@@ -554,7 +559,8 @@
       [text]
       (m include) [[:include (include-info text)]]
       (m required) []
-      (m testcode) [[:testcode text]]
+      (m test-begin) [[:test-begin text]]
+      (m test-end) [[:test-end text]]
       (m anchor) [[:anchor text]]
       (m heading) [[:anchor text]
                    [:comment (m markdown)]]
@@ -579,7 +585,7 @@
   [lines]
   (lazy-seq
     (when-let [classfn (first (first lines))]
-      (if (#{:comment :code :testcode} classfn)
+      (if (#{:comment :code} classfn)
         (let [[same tail] (split-with #(= classfn (first %)) lines)
               text (string/join "\n" (map second same))]
           (cons [classfn text] (gather-lines- tail)))
@@ -658,17 +664,16 @@
                   "</pre>"))))
 
 (defmethod html<- :comment [[_ text]]
-  (message text)
   (println (.markdownToHtml processor text link-renderer)))
 
 (defmethod html<- :anchor [[_ text]]
   (println (str "<a id='" (normalize-anchor text) "'></a>")))
 
 (defmethod html<- :include [[_ [path comment lang] :as args]]
-    (render-file "<section>" path comment lang))
+  (render-file "<section>" path comment lang))
 
-(defmethod html<- :testcode [[_ text]]
-  (html<- [:code text]))
+(defmethod html<- :test-begin [_])
+(defmethod html<- :test-end [_])
 
 
 ; ## Look and feel
@@ -783,10 +788,11 @@
 
 ; ## Testing
 
-(defn write-test-file
+(defn write-production-file
   ""
   [in-file outdir]
-  (let [out-file (io/file outdir in-file)]
+  (let [out-file (io/file outdir in-file)
+        in-test? (atom false)]
     (.. out-file (getParentFile) (mkdirs))
     (map-lines
       in-file out-file
@@ -794,28 +800,41 @@
         (let [m (partial ?match line)]
           (cond-let
             [text]
-            (m testcode) text
+            (m test-begin)
+            (do (reset! in-test? true)
+              line)
 
-            (m include)
-            (let [[path comment lang] (include-info text)]
-              (binding [*path* path]
-                (binding [*single-comment* comment]
-                  (binding [*language* lang]
-                    (write-test-file path outdir)))))
+            (m test-end)
+            (do (reset! in-test? false)
+              line)
 
-            (m required)
-            (io/copy text (io/file outdir text))
+            :else
+            (if @in-test?
+              (str *single-comment* line)
+              (cond-let
+                [text]
+                (m include)
+                (let [[path comment lang] (include-info text)]
+                  (binding [*path* path]
+                    (binding [*single-comment* comment]
+                      (binding [*language* lang]
+                        (write-production-file path outdir))))
+                  line)
 
-            :else line))))))
+                (m required)
+                (do (io/copy text (io/file outdir text))
+                  line)
 
-(defn write-test-tree
+                :else line))))))))
+
+(defn write-production-tree
   ""
   [in-paths outdir]
   (when (fs/exists? outdir)
     (fs/deltree outdir))
   (fs/mkdir outdir)
   (doseq [p in-paths]
-    (write-test-file p outdir)))
+    (write-production-file p outdir)))
 
 
 ; ## Commandline
@@ -834,7 +853,7 @@
                  ["-t" "--theme" "SyntaxHighlighter theme file"]
                  ["-l" "--language" "SyntaxHighlighter language"]
                  ["-s" "--stylesheet" "A stylesheet file to include"]
-                 ["-t" "--testtree" "Test tree directory (no documentation)."]
+                 ["-p" "--production" "Production directory."]
                  ["-v" "--verbose" "Turn on verbose output"
                   :default false :flag true]
                  ["-h" "--help" "Show this help" :default false :flag true])]
@@ -860,8 +879,8 @@
                 *language* (canonical-lang (or (:language amap) *language*))]
 
 ; When no output file is given, the program renders to standard-out.
-        (if-let [tt (:testtree amap)]
-          (write-test-tree tail tt)
+        (if-let [dir (:production amap)]
+          (write-production-tree tail dir)
           (if (= 1 (count tail))
             (process-files tail *out*)
             (process-files (butlast tail) (last tail))))))))

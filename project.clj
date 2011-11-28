@@ -20,6 +20,7 @@
   :dependencies
   [[org.clojure/clojure "1.3.0"]
    [org.pegdown/pegdown "1.1.0"]
+   [fs "0.11.0"]
    ;[com.google.javascript/closure-compiler "r1592"]
 
 ; A [modified][m] `org.clojure/tools.cli` is used (for repeated options).

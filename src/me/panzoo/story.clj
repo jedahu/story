@@ -32,9 +32,11 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as string]
-    [clojure.tools.cli :as cli])
+    [clojure.tools.cli :as cli]
+    fs)
   (:import
     [java.util.regex Pattern]
+    [java.io BufferedReader BufferedWriter]
     [org.pegdown PegDownProcessor Extensions
 
 ; Internal links (to element ids) are nice to have. These imports will be used
@@ -274,11 +276,18 @@
       (println (apply str s)))))
 
 (defn each
-  "Apply f to each item of coll in order for side effects only.
-  Returns nil."
+  "Apply f to each item of coll in order for side effects only. Evaluates coll
+  strictly, unlike for. Returns nil."
   [f coll]
   (doseq [c coll]
     (f c)))
+
+(defn lazy-each
+  ""
+  [f coll]
+  (lazy-seq
+    (when (seq coll)
+      (cons (f (first coll)) (lazy-each f (rest coll))))))
 
 (defn slurp-resource
   "Get the complete contents of a Java resource. Throws an exception on
@@ -327,6 +336,9 @@
      \> "&gt;"
      \& "&amp;"}))
 
+
+; ### IO helpers
+
 (defmacro with-out-stream
   "Wrap an output stream using clojure.java.io/writer bind it to *out*, then
   execute body."
@@ -334,6 +346,36 @@
   `(with-open [w# (io/writer ~out)]
      (binding [*out* w#]
        ~@body)))
+
+(defn read-lines
+  "Like clojure.core/line-seq but opens r with reader.  Automatically
+  closes the reader AFTER YOU CONSUME THE ENTIRE SEQUENCE."
+  [r]
+  (let [read-line (fn this [^BufferedReader rdr]
+                    (lazy-seq
+                      (if-let [line (.readLine rdr)]
+                        (cons line (this rdr))
+                        (.close rdr))))]
+    (read-line (io/reader r))))
+
+(defn write-lines
+  "Writes lines (a seq) to f, separated by newlines.  f is opened with
+  writer, and automatically closed at the end of the sequence."
+  [w lines]
+  (with-open [^BufferedWriter writer (io/writer w)]
+    (loop [lines lines]
+      (when-let [line (first lines)]
+        (.write writer (str line))
+        (.newLine writer)
+        (recur (rest lines))))))
+
+(defn map-lines
+  ""
+  [r w f]
+  (write-lines w (map f (read-lines r))))
+
+
+; ### SyntaxHighlighter language helpers
 
 (defn canonical-lang
   "Given a language keyword, return its canonical equivalent."
@@ -360,10 +402,19 @@
 
 ; ### Regular expression helpers
 
+(defn ?match [s reg]
+  (when-let [m (re-find (reg) s)]
+    (.substring s (count m))))
+
 (defn comment
   "A regular expression matching the beginning of a commented line."
   []
-  (re-pattern (str "^" (Pattern/quote *single-comment*) " ?")))
+  (re-pattern (str "^" (Pattern/quote *single-comment*))))
+
+(defn markdown
+  ""
+  []
+  (re-pattern (str (comment) " ")))
 
 (defn hidden-comment
   "A regular expression matching the beginning of a commented line that will
@@ -379,12 +430,22 @@
 (defn heading
   "A regular expression matching the beginning of a heading line."
   []
-  (re-pattern (str (comment) "#+ *")))
+  (re-pattern (str (markdown) "#+ *")))
 
 (defn include
   "A regular expression matching the beginning of an include line."
   []
   (re-pattern (str (comment) "%include +")))
+
+(defn required
+  "A regular expression matching the beginning of a require line."
+  []
+  (re-pattern (str (comment) "%require +")))
+
+(defn testcode
+  "A regular expression matching the beginning of a test comment."
+  []
+  (re-pattern (str (comment) "\\? ")))
 
 
 ; ## Parsing
@@ -468,25 +529,37 @@
       [[:anchor (str *path* "/" id)]])
     []))
 
-; Each line of a source file will be either code, comment, anchor, or include.
-; Headings are treated as both anchors and comments.
+(defn include-info
+  ""
+  [s]
+  (let [[path & [token lang]] (string/split s #"\s+")
+        lang (canonical-lang (or lang
+                                 (re-find #"(?<=\.)[^/.]+$" path)
+                                 *language*))
+        comment (or token
+                    (lang-comment (or lang *language*))
+                    *single-comment*)]
+    [path comment lang]))
+
+; Each line of a source file will be either code, comment, anchor, include, or
+; test code. Headings are treated as both anchors and comments.
 (defn classify-line
   "Classify the first line in lines. Commented lines prefixed by white space
   are ignored. Returns a vector containing a single pair of the form
   [<classification> <data>], where <data> is a string except in the case of an
   include where it is a vector of [<path> & [<comment-syntax> <language>]]."
   [[line :as lines]]
-  (letfn [(match? [reg] (re-find (reg) line))]
+  (let [m (partial ?match line)]
     (cond-let
-      [match]
-      (match? include) [[:include (string/split
-                                    (.substring line (count match)) #"\s+")]]
-      (match? anchor) [[:anchor (.substring line (count match))]]
-      (match? heading) [[:anchor (.substring line (count match))]
-                        [:comment (.substring
-                                    line (count (match? comment)))]]
-      (match? comment) [[:comment (.substring line (count match))]]
-      (match? hidden-comment) []
+      [text]
+      (m include) [[:include (include-info text)]]
+      (m required) []
+      (m testcode) [[:testcode text]]
+      (m anchor) [[:anchor text]]
+      (m heading) [[:anchor text]
+                   [:comment (m markdown)]]
+      (m comment) [[:comment text]]
+      (m hidden-comment) []
       :else (conj (maybe-code-anchor line (lines-reader lines))
                   [:code line]))))
 
@@ -506,7 +579,7 @@
   [lines]
   (lazy-seq
     (when-let [classfn (first (first lines))]
-      (if (#{:comment :code} classfn)
+      (if (#{:comment :code :testcode} classfn)
         (let [[same tail] (split-with #(= classfn (first %)) lines)
               text (string/join "\n" (map second same))]
           (cons [classfn text] (gather-lines- tail)))
@@ -552,7 +625,7 @@
 ; including file).
   (binding [*language* (canonical-lang
                          (or lang
-                             (re-find #"(?<=\.)[^.]+$" path)
+                             (re-find #"(?<=\.)[^/.]+$" path)
                              *language*))]
     (binding [*single-comment* (or token
                                    (lang-comment *language*)
@@ -565,14 +638,13 @@
             (html<- [:comment (slurp path)])
             (do
               (maybe-associate-brush path *language*)
-              (with-open [r (io/reader path)]
 
 ; Lines of source code are read lazily by `line-seq` and gathered lazily by
 ; `gather-lines`, Along with printing each chunk of comment or code to an
 ; output stream, this ensures that the maximum memory used by this program will
 ; be determined by the largest comment or code chunk and not the total size of
 ; the source file.
-                (each html<- (gather-lines (line-seq r)))))))))))
+              (each html<- (gather-lines (read-lines path))))))))))
 
 ; Code chunks are wrapped in a `pre` with the correct incantation for
 ; SyntaxHighlighter in its `class` attribute; comments are run through the
@@ -586,14 +658,17 @@
                   "</pre>"))))
 
 (defmethod html<- :comment [[_ text]]
+  (message text)
   (println (.markdownToHtml processor text link-renderer)))
 
 (defmethod html<- :anchor [[_ text]]
   (println (str "<a id='" (normalize-anchor text) "'></a>")))
 
-(defmethod html<- :include [[_ [path & [token lang]] :as args]]
-  (let [lang (or lang (re-find #"(?<=\.)[^.]+$" path))]
-    (render-file "<section>" path token lang)))
+(defmethod html<- :include [[_ [path comment lang] :as args]]
+    (render-file "<section>" path comment lang))
+
+(defmethod html<- :testcode [[_ text]]
+  (html<- [:code text]))
 
 
 ; ## Look and feel
@@ -706,6 +781,43 @@
     (render-files in-paths)))
 
 
+; ## Testing
+
+(defn write-test-file
+  ""
+  [in-file outdir]
+  (let [out-file (io/file outdir in-file)]
+    (.. out-file (getParentFile) (mkdirs))
+    (map-lines
+      in-file out-file
+      (fn [line]
+        (let [m (partial ?match line)]
+          (cond-let
+            [text]
+            (m testcode) text
+
+            (m include)
+            (let [[path comment lang] (include-info text)]
+              (binding [*path* path]
+                (binding [*single-comment* comment]
+                  (binding [*language* lang]
+                    (write-test-file path outdir)))))
+
+            (m required)
+            (io/copy text (io/file outdir text))
+
+            :else line))))))
+
+(defn write-test-tree
+  ""
+  [in-paths outdir]
+  (when (fs/exists? outdir)
+    (fs/deltree outdir))
+  (fs/mkdir outdir)
+  (doseq [p in-paths]
+    (write-test-file p outdir)))
+
+
 ; ## Commandline
 ;
 ; Use this program from the commandline like so.
@@ -722,6 +834,7 @@
                  ["-t" "--theme" "SyntaxHighlighter theme file"]
                  ["-l" "--language" "SyntaxHighlighter language"]
                  ["-s" "--stylesheet" "A stylesheet file to include"]
+                 ["-t" "--testtree" "Test tree directory (no documentation)."]
                  ["-v" "--verbose" "Turn on verbose output"
                   :default false :flag true]
                  ["-h" "--help" "Show this help" :default false :flag true])]
@@ -747,6 +860,8 @@
                 *language* (canonical-lang (or (:language amap) *language*))]
 
 ; When no output file is given, the program renders to standard-out.
-        (if (= 1 (count tail))
-          (process-files tail *out*)
-          (process-files (butlast tail) (last tail)))))))
+        (if-let [tt (:testtree amap)]
+          (write-test-tree tail tt)
+          (if (= 1 (count tail))
+            (process-files tail *out*)
+            (process-files (butlast tail) (last tail))))))))

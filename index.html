@@ -2639,6 +2639,7 @@ div#outline > ol > li > a:visited
 <pre class='brush: clojure'>  :dependencies
   [[org.clojure/clojure "1.3.0"]
    [org.pegdown/pegdown "1.1.0"]
+   [fs "0.11.0"]
 </pre>
 <p>A <a href="https://github.com/jedahu/tools.cli">modified</a> <code>org.clojure/tools.cli</code> is used (for repeated options). Upstream inclusion pending the sending of a <a href="http://clojure.org/file/view/ca.pdf">Rich Hickey Contributor Agreement (PDF)</a> form.</p>
 <pre class='brush: clojure'>   [me.panzoo/tools.cli "0.2.2"]]
@@ -2659,6 +2660,12 @@ div#outline > ol > li > a:visited
 (defn hello []
   (println "Hello world!"))
 
+;&lt;?
+(assert (= (hello) "Hello world!"))
+;?&gt;
+
+;%require config.xml
+
 ;%include fibonacci.clj
 ;%include fibonacci.js // javascript
 ;
@@ -2668,6 +2675,8 @@ div#outline > ol > li > a:visited
 </pre>
 <a id='project.clj/Includes'></a>
 <h3>Includes</h3><p>As you can see, files written in different languages can be included. In this example <code>fibonacci.js</code> is followed by the comment syntax and language name to use with SyntaxHighlighter. For a number of languages (including javascript) this information can be obtained from the file extension and the appropriate brush file pulled in automatically; those languages are listed in the <a href="#src/me/panzoo/story.clj/Language-map">Language map</a>.</p>
+<a id='project.clj/Test-code-and-production'></a>
+<h3>Test code and production</h3><p>Test code can be included inline using <code>&lt;?</code> and <code>?&gt;</code>, and commented out for production. The <code>%require</code> directive marks a file or directory for production use without including it in the documentation. See <a href="#src/me/panzoo/story.clj/Testing">Testing</a> for more detail.</p>
 <a id='project.clj/Internal-links'></a>
 <h3>Internal links</h3><p>Wiki style links (<code>[[link]]</code>) point to explicit anchors (<code>;@&lt;id&gt;</code>) or to implicit anchors (the names of definitions). Implicit anchors are created for Markdown headings (#-style only) and definitions in code (only for languages with methods for <code>me.panzoo.story/</code><a href="#src/me/panzoo/story.clj/code-anchor-id">code-anchor-id</a>; be aware, not all methods have been well tested).</p><p>Wiki links to anchors in other files must be qualified by the file&rsquo;s path. The markup for the link to <code>code-anchor-id</code> looks like this: <code>[[src/me/panzoo/story.clj/code-anchor-id]]</code>.</p><p>If any anchors for code definitions are created, an alphabetical TOC like list of links to those anchors will appear on the right side of the page.</p>
 <a id='project.clj/Build-instructions'></a>
@@ -2689,9 +2698,11 @@ lein uberjar
   (:require
     [clojure.java.io :as io]
     [clojure.string :as string]
-    [clojure.tools.cli :as cli])
+    [clojure.tools.cli :as cli]
+    fs)
   (:import
     [java.util.regex Pattern]
+    [java.io BufferedReader BufferedWriter]
     [org.pegdown PegDownProcessor Extensions
 </pre>
 <p>Internal links (to element ids) are nice to have. These imports will be used to create a modified LinkRenderer.</p>
@@ -2789,6 +2800,7 @@ lein uberjar
    :vimscript ["\"" "shBrushVimscript.js"]
    :vb ["'" "shBrushVb.js"]
    :vbnet ["'" "shBrushVb.js"]
+   :markdown ["" nil]
    })
 </pre>
 <a id='src/me/panzoo/story.clj/language-aliases'></a>
@@ -2812,7 +2824,8 @@ lein uberjar
    :rb :ruby
    :sass :scss
    :vimscript :vim
-   :vbnet :vb})
+   :vbnet :vb
+   :md :markdown})
 
 </pre>
 <a id='src/me/panzoo/story.clj/Pegdown-instances'></a>
@@ -2896,11 +2909,19 @@ lein uberjar
 </pre>
 <a id='src/me/panzoo/story.clj/each'></a>
 <pre class='brush: clojure'>(defn each
-  "Apply f to each item of coll in order for side effects only.
-  Returns nil."
+  "Apply f to each item of coll in order for side effects only. Evaluates coll
+  strictly, unlike for. Returns nil."
   [f coll]
   (doseq [c coll]
     (f c)))
+</pre>
+<a id='src/me/panzoo/story.clj/lazy-each'></a>
+<pre class='brush: clojure'>(defn lazy-each
+  ""
+  [f coll]
+  (lazy-seq
+    (when (seq coll)
+      (cons (f (first coll)) (lazy-each f (rest coll))))))
 </pre>
 <a id='src/me/panzoo/story.clj/slurp-resource'></a>
 <pre class='brush: clojure'>(defn slurp-resource
@@ -2953,7 +2974,10 @@ lein uberjar
     {\&lt; "&amp;lt;"
      \&gt; "&amp;gt;"
      \&amp; "&amp;amp;"}))
+
 </pre>
+<a id='src/me/panzoo/story.clj/IO-helpers'></a>
+<h3>IO helpers</h3>
 <a id='src/me/panzoo/story.clj/with-out-stream'></a>
 <pre class='brush: clojure'>(defmacro with-out-stream
   "Wrap an output stream using clojure.java.io/writer bind it to *out*, then
@@ -2963,6 +2987,39 @@ lein uberjar
      (binding [*out* w#]
        ~@body)))
 </pre>
+<a id='src/me/panzoo/story.clj/read-lines'></a>
+<pre class='brush: clojure'>(defn read-lines
+  "Like clojure.core/line-seq but opens r with reader.  Automatically
+  closes the reader AFTER YOU CONSUME THE ENTIRE SEQUENCE."
+  [r]
+  (let [read-line (fn this [^BufferedReader rdr]
+                    (lazy-seq
+                      (if-let [line (.readLine rdr)]
+                        (cons line (this rdr))
+                        (.close rdr))))]
+    (read-line (io/reader r))))
+</pre>
+<a id='src/me/panzoo/story.clj/write-lines'></a>
+<pre class='brush: clojure'>(defn write-lines
+  "Writes lines (a seq) to f, separated by newlines.  f is opened with
+  writer, and automatically closed at the end of the sequence."
+  [w lines]
+  (with-open [^BufferedWriter writer (io/writer w)]
+    (loop [lines lines]
+      (when-let [line (first lines)]
+        (.write writer (str line))
+        (.newLine writer)
+        (recur (rest lines))))))
+</pre>
+<a id='src/me/panzoo/story.clj/map-lines'></a>
+<pre class='brush: clojure'>(defn map-lines
+  ""
+  [r w f]
+  (write-lines w (map f (read-lines r))))
+
+</pre>
+<a id='src/me/panzoo/story.clj/SyntaxHighlighter-language-helpers'></a>
+<h3>SyntaxHighlighter language helpers</h3>
 <a id='src/me/panzoo/story.clj/canonical-lang'></a>
 <pre class='brush: clojure'>(defn canonical-lang
   "Given a language keyword, return its canonical equivalent."
@@ -2992,11 +3049,30 @@ lein uberjar
 </pre>
 <a id='src/me/panzoo/story.clj/Regular-expression-helpers'></a>
 <h3>Regular expression helpers</h3>
+<a id='src/me/panzoo/story.clj/?match'></a>
+<pre class='brush: clojure'>(defn ?match [s reg]
+  (when-let [m (re-find (reg) s)]
+    (.substring s (count m))))
+</pre>
 <a id='src/me/panzoo/story.clj/comment'></a>
 <pre class='brush: clojure'>(defn comment
   "A regular expression matching the beginning of a commented line."
   []
-  (re-pattern (str "^" (Pattern/quote *single-comment*) " ?")))
+  (re-pattern (str "^" (Pattern/quote *single-comment*))))
+</pre>
+<a id='src/me/panzoo/story.clj/markdown*'></a>
+<pre class='brush: clojure'>(defn markdown*
+  ""
+  []
+  (if (= :markdown (canonical-lang *language*))
+    (comment)
+    (re-pattern (str (comment) " "))))
+</pre>
+<a id='src/me/panzoo/story.clj/markdown'></a>
+<pre class='brush: clojure'>(defn markdown
+  ""
+  []
+  (re-pattern (str (markdown*) "|" (comment) "$")))
 </pre>
 <a id='src/me/panzoo/story.clj/hidden-comment'></a>
 <pre class='brush: clojure'>(defn hidden-comment
@@ -3015,13 +3091,31 @@ lein uberjar
 <pre class='brush: clojure'>(defn heading
   "A regular expression matching the beginning of a heading line."
   []
-  (re-pattern (str (comment) "#+ *")))
+  (re-pattern (str (markdown*) "\\#+ *")))
 </pre>
 <a id='src/me/panzoo/story.clj/include'></a>
 <pre class='brush: clojure'>(defn include
   "A regular expression matching the beginning of an include line."
   []
   (re-pattern (str (comment) "%include +")))
+</pre>
+<a id='src/me/panzoo/story.clj/required'></a>
+<pre class='brush: clojure'>(defn required
+  "A regular expression matching the beginning of a require line."
+  []
+  (re-pattern (str (comment) "%require +")))
+</pre>
+<a id='src/me/panzoo/story.clj/test-begin'></a>
+<pre class='brush: clojure'>(defn test-begin
+  "A regular expression matching a test-begin line."
+  []
+  (re-pattern (str (comment) "&lt;\\?")))
+</pre>
+<a id='src/me/panzoo/story.clj/test-end'></a>
+<pre class='brush: clojure'>(defn test-end
+  "A regular expression matching a test-end line."
+  []
+  (re-pattern (str (comment) "\\?&gt;")))
 
 </pre>
 <a id='src/me/panzoo/story.clj/Parsing'></a>
@@ -3096,7 +3190,20 @@ lein uberjar
       [[:anchor (str *path* "/" id)]])
     []))
 </pre>
-<p>Each line of a source file will be either code, comment, anchor, or include. Headings are treated as both anchors and comments.</p>
+<a id='src/me/panzoo/story.clj/include-info'></a>
+<pre class='brush: clojure'>(defn include-info
+  ""
+  [s]
+  (let [[path &amp; [token lang]] (string/split s #"\s+")
+        lang (canonical-lang (or lang
+                                 (re-find #"(?&lt;=\.)[^/.]+$" path)
+                                 *language*))
+        comment (or token
+                    (lang-comment (or lang *language*))
+                    *single-comment*)]
+    [path comment lang]))
+</pre>
+<p>Each line of a source file will be either code, comment, anchor, include, or test code. Headings are treated as both anchors and comments.</p>
 <a id='src/me/panzoo/story.clj/classify-line'></a>
 <pre class='brush: clojure'>(defn classify-line
   "Classify the first line in lines. Commented lines prefixed by white space
@@ -3104,17 +3211,18 @@ lein uberjar
   [&lt;classification&gt; &lt;data&gt;], where &lt;data&gt; is a string except in the case of an
   include where it is a vector of [&lt;path&gt; &amp; [&lt;comment-syntax&gt; &lt;language&gt;]]."
   [[line :as lines]]
-  (letfn [(match? [reg] (re-find (reg) line))]
+  (let [m (partial ?match line)]
     (cond-let
-      [match]
-      (match? include) [[:include (string/split
-                                    (.substring line (count match)) #"\s+")]]
-      (match? anchor) [[:anchor (.substring line (count match))]]
-      (match? heading) [[:anchor (.substring line (count match))]
-                        [:comment (.substring
-                                    line (count (match? comment)))]]
-      (match? comment) [[:comment (.substring line (count match))]]
-      (match? hidden-comment) []
+      [text]
+      (m include) [[:include (include-info text)]]
+      (m required) []
+      (m test-begin) [[:test-begin text]]
+      (m test-end) [[:test-end text]]
+      (m anchor) [[:anchor text]]
+      (m heading) [[:anchor text]
+                   [:comment (m markdown)]]
+      (m markdown) [[:comment text]]
+      (m hidden-comment) []
       :else (conj (maybe-code-anchor line (lines-reader lines))
                   [:code line]))))
 </pre>
@@ -3178,7 +3286,7 @@ lein uberjar
 <p>For each file, new bindings are made for comment syntax and language. If the language or comment syntax (<code>token</code>) are not supplied, they are guessed from the <code>path</code> suffix, and if that fails they are set to the values they have in the enclsing dynamic scope (i.e., from the commandline or the including file).</p>
 <pre class='brush: clojure'>  (binding [*language* (canonical-lang
                          (or lang
-                             (re-find #"(?&lt;=\.)[^.]+$" path)
+                             (re-find #"(?&lt;=\.)[^/.]+$" path)
                              *language*))]
     (binding [*single-comment* (or token
                                    (lang-comment *language*)
@@ -3188,13 +3296,12 @@ lein uberjar
           (if (#{:markdown :md} *language*)
 </pre>
 <p>A markdown file is a special case. It is treated as a single comment block.</p>
-<pre class='brush: clojure'>            (html&lt;- [:comment (slurp path)])
+<pre class='brush: clojure'>            (each html&lt;- (gather-lines (read-lines path)))
             (do
               (maybe-associate-brush path *language*)
-              (with-open [r (io/reader path)]
 </pre>
 <p>Lines of source code are read lazily by <code>line-seq</code> and gathered lazily by <code>gather-lines</code>, Along with printing each chunk of comment or code to an output stream, this ensures that the maximum memory used by this program will be determined by the largest comment or code chunk and not the total size of the source file.</p>
-<pre class='brush: clojure'>                (each html&lt;- (gather-lines (line-seq r)))))))))))
+<pre class='brush: clojure'>              (each html&lt;- (gather-lines (read-lines path))))))))))
 </pre>
 <p>Code chunks are wrapped in a <code>pre</code> with the correct incantation for SyntaxHighlighter in its <code>class</code> attribute; comments are run through the Markdown processor; anchors become hrefless HTML anchors; and includes wrap the result of parsing and rendering the file they point to in <code>section</code> tags.</p>
 <a id='src/me/panzoo/story.clj/html<--:code'></a>
@@ -3213,9 +3320,16 @@ lein uberjar
   (println (str "&lt;a id='" (normalize-anchor text) "'&gt;&lt;/a&gt;")))
 </pre>
 <a id='src/me/panzoo/story.clj/html<--:include'></a>
-<pre class='brush: clojure'>(defmethod html&lt;- :include [[_ [path &amp; [token lang]] :as args]]
-  (let [lang (or lang (re-find #"(?&lt;=\.)[^.]+$" path))]
-    (render-file "&lt;section&gt;" path token lang)))
+<pre class='brush: clojure'>(defmethod html&lt;- :include [[_ [path comment lang] :as args]]
+  (render-file "&lt;section&gt;" path comment lang))
+</pre>
+<a id='src/me/panzoo/story.clj/html<--:test-begin'></a>
+<pre class='brush: clojure'>(defmethod html&lt;- :test-begin [_]
+  (println "&lt;div class='test'&gt;"))
+</pre>
+<a id='src/me/panzoo/story.clj/html<--:test-end'></a>
+<pre class='brush: clojure'>(defmethod html&lt;- :test-end [_]
+  (println "&lt;/div&gt;"))
 
 </pre>
 <a id='src/me/panzoo/story.clj/Look-and-feel'></a>
@@ -3320,6 +3434,63 @@ lein uberjar
     (render-files in-paths)))
 
 </pre>
+<a id='src/me/panzoo/story.clj/Testing'></a>
+<h2>Testing</h2><p>Code that is wrapped in test tags <code>;&lt;?</code> and <code>;?&gt;</code>, where <code>;</code> is the comment syntax for the file, will be included in the output by default and wrapped in a <code>div</code> with the class <code>test</code>. To get a production tree without tests, run this program with the <code>--production</code> flag with a directory argument, or call <a href="#src/me/panzoo/story.clj/write-production-tree">write-production-tree</a>.</p><p>To include files in the production tree but not in the documentation, use <code>;%require &lt;file or directory&gt;</code>, replacing <code>;</code> with the correct comment token.</p>
+<a id='src/me/panzoo/story.clj/write-production-file'></a>
+<pre class='brush: clojure'>(defn write-production-file
+  "Write in-file to outdir with all test code commented (thus preserving line
+  numbers)."
+  [in-file outdir]
+  (let [out-file (io/file outdir in-file)
+        in-test? (atom false)]
+    (.. out-file (getParentFile) (mkdirs))
+    (map-lines
+      in-file out-file
+      (fn [line]
+        (let [m (partial ?match line)]
+          (cond-let
+            [text]
+            (m test-begin)
+            (do (reset! in-test? true)
+              line)
+
+            (m test-end)
+            (do (reset! in-test? false)
+              line)
+
+            :else
+            (if @in-test?
+              (str *single-comment* line)
+              (cond-let
+                [text]
+                (m include)
+                (let [[path comment lang] (include-info text)]
+                  (binding [*path* path]
+                    (binding [*single-comment* comment]
+                      (binding [*language* lang]
+                        (write-production-file path outdir))))
+                  line)
+
+                (m required)
+                (do (if (fs/directory? text)
+                      (fs/copy-tree text (io/file outdir text))
+                      (fs/copy+ text (io/file outdir text)))
+                  line)
+
+                :else line))))))))
+</pre>
+<a id='src/me/panzoo/story.clj/write-production-tree'></a>
+<pre class='brush: clojure'>(defn write-production-tree
+  "Write the contents of in-paths with recursive included and required files
+  and directories to outdir, with any test code commented."
+  [in-paths outdir]
+  (when (fs/exists? outdir)
+    (fs/deltree outdir))
+  (fs/mkdir outdir)
+  (doseq [p in-paths]
+    (write-production-file p outdir)))
+
+</pre>
 <a id='src/me/panzoo/story.clj/Commandline'></a>
 <h2>Commandline</h2><p>Use this program from the commandline like so.</p>
 <a id='src/me/panzoo/story.clj/usage'></a>
@@ -3336,12 +3507,14 @@ lein uberjar
                  ["-t" "--theme" "SyntaxHighlighter theme file"]
                  ["-l" "--language" "SyntaxHighlighter language"]
                  ["-s" "--stylesheet" "A stylesheet file to include"]
+                 ["-p" "--production" "Production directory."]
                  ["-v" "--verbose" "Turn on verbose output"
                   :default false :flag true]
                  ["-h" "--help" "Show this help" :default false :flag true])]
 </pre>
-<p>For the brush, theme, and stylesheet options the program first tries to read from the filesystem and if that fails because the file is not found then an attempt is made to read from the program&rsquo;s resources. The resources contain the standard SyntaxHighlighter brushes and themes under their normal file names including an additional <code>shBrushClojure.js</code> and <code>shThemeClojure.css</code>.</p><p>Multiple brushes can be used by repeating the <code>-b</code> or <code>--brush</code> options. Additional brushes may be added by the program as a result of file includes and file suffixes.</p>
-<pre class='brush: clojure'>    (if (or (not (seq tail)) (:help amap))
+<p>For the brush, theme, and stylesheet options the program first tries to read from the filesystem and if that fails because the file is not found then an attempt is made to read from the program&rsquo;s resources. The resources contain the standard SyntaxHighlighter brushes and themes under their normal file names including an additional <code>shBrushClojure.js</code> and <code>shThemeClojure.css</code>.</p><p>Multiple brushes can be used by repeating the <code>-b</code> or <code>--brush</code> options. Additional brushes may be added by the program as a result of file includes and file suffixes.</p><p>If present, the <code>-p</code> or <code>--production</code> option prevents documentation generation, and instead writes a production tree to the supplied directory using <a href="#src/me/panzoo/story.clj/write-production-tree">write-production-tree</a>.</p>
+<pre class='brush: clojure'>
+    (if (or (not (seq tail)) (:help amap))
       (do (println (str usage "\n" banner))
         (System/exit 1))
       (binding [*settings* {:theme (or (:theme amap) (:theme *settings*))
@@ -3352,9 +3525,11 @@ lein uberjar
                 *language* (canonical-lang (or (:language amap) *language*))]
 </pre>
 <p>When no output file is given, the program renders to standard-out.</p>
-<pre class='brush: clojure'>        (if (= 1 (count tail))
-          (process-files tail *out*)
-          (process-files (butlast tail) (last tail)))))))</pre>
+<pre class='brush: clojure'>        (if-let [dir (:production amap)]
+          (write-production-tree tail dir)
+          (if (= 1 (count tail))
+            (process-files tail *out*)
+            (process-files (butlast tail) (last tail))))))))</pre>
 </section><section><a id='resources/page.js/Javascript-setup'></a>
 <h1>Javascript setup</h1><p>This setup code is placed in a function purely to test/show-off story&rsquo;s anchor generation.</p>
 <a id='resources/page.js/me_panzoo_story_setup'></a>
@@ -3416,7 +3591,7 @@ au BufEnter *.vim setlocal foldexpr=MarkdownLevel(comment#dblquote)
 </pre>
 <a id='folding.vim/Key-bindings'></a>
 <h2>Key bindings</h2><p><code>za</code> toggle current fold<br/><code>zR</code> open all folds<br/><code>zM</code> close all folds<br/><code>zr</code> open one more level of folds<br/><code>zm</code> close one more level of folds </p>
-</section></article><div id='code-anchors'><ul><li>project.clj<br><ul><li><a href='#project.clj/story'>story</a></li></ul></li><li>src/me/panzoo/story.clj<br><ul><li><a href='#src/me/panzoo/story.clj/*brushes*'>*brushes*</a></li><li><a href='#src/me/panzoo/story.clj/*code-anchors*'>*code-anchors*</a></li><li><a href='#src/me/panzoo/story.clj/*language*'>*language*</a></li><li><a href='#src/me/panzoo/story.clj/*path*'>*path*</a></li><li><a href='#src/me/panzoo/story.clj/*settings*'>*settings*</a></li><li><a href='#src/me/panzoo/story.clj/*single-comment*'>*single-comment*</a></li><li><a href='#src/me/panzoo/story.clj/-main'>-main</a></li><li><a href='#src/me/panzoo/story.clj/anchor'>anchor</a></li><li><a href='#src/me/panzoo/story.clj/canonical-lang'>canonical-lang</a></li><li><a href='#src/me/panzoo/story.clj/classify-line'>classify-line</a></li><li><a href='#src/me/panzoo/story.clj/classify-lines'>classify-lines</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id'>code-anchor-id</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:clojure'>code-anchor-id :clojure</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:default'>code-anchor-id :default</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:javascript'>code-anchor-id :javascript</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:vim'>code-anchor-id :vim</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-toc'>code-anchor-toc</a></li><li><a href='#src/me/panzoo/story.clj/comment'>comment</a></li><li><a href='#src/me/panzoo/story.clj/cond-let'>cond-let</a></li><li><a href='#src/me/panzoo/story.clj/each'>each</a></li><li><a href='#src/me/panzoo/story.clj/encode-anchor'>encode-anchor</a></li><li><a href='#src/me/panzoo/story.clj/gather-lines'>gather-lines</a></li><li><a href='#src/me/panzoo/story.clj/gather-lines-'>gather-lines-</a></li><li><a href='#src/me/panzoo/story.clj/heading'>heading</a></li><li><a href='#src/me/panzoo/story.clj/hidden-comment'>hidden-comment</a></li><li><a href='#src/me/panzoo/story.clj/html-escape'>html-escape</a></li><li><a href='#src/me/panzoo/story.clj/html<-'>html&lt;-</a></li><li><a href='#src/me/panzoo/story.clj/html<--:anchor'>html&lt;- :anchor</a></li><li><a href='#src/me/panzoo/story.clj/html<--:code'>html&lt;- :code</a></li><li><a href='#src/me/panzoo/story.clj/html<--:comment'>html&lt;- :comment</a></li><li><a href='#src/me/panzoo/story.clj/html<--:include'>html&lt;- :include</a></li><li><a href='#src/me/panzoo/story.clj/include'>include</a></li><li><a href='#src/me/panzoo/story.clj/inline-brushes'>inline-brushes</a></li><li><a href='#src/me/panzoo/story.clj/inline-css'>inline-css</a></li><li><a href='#src/me/panzoo/story.clj/inline-js'>inline-js</a></li><li><a href='#src/me/panzoo/story.clj/inline-stylesheet'>inline-stylesheet</a></li><li><a href='#src/me/panzoo/story.clj/inline-theme'>inline-theme</a></li><li><a href='#src/me/panzoo/story.clj/javascript-setup'>javascript-setup</a></li><li><a href='#src/me/panzoo/story.clj/lang-brush'>lang-brush</a></li><li><a href='#src/me/panzoo/story.clj/lang-comment'>lang-comment</a></li><li><a href='#src/me/panzoo/story.clj/lang-info'>lang-info</a></li><li><a href='#src/me/panzoo/story.clj/language-aliases'>language-aliases</a></li><li><a href='#src/me/panzoo/story.clj/languages'>languages</a></li><li><a href='#src/me/panzoo/story.clj/lines-reader'>lines-reader</a></li><li><a href='#src/me/panzoo/story.clj/link-renderer'>link-renderer</a></li><li><a href='#src/me/panzoo/story.clj/look-and-feel'>look-and-feel</a></li><li><a href='#src/me/panzoo/story.clj/maybe-associate-brush'>maybe-associate-brush</a></li><li><a href='#src/me/panzoo/story.clj/maybe-code-anchor'>maybe-code-anchor</a></li><li><a href='#src/me/panzoo/story.clj/message'>message</a></li><li><a href='#src/me/panzoo/story.clj/normalize-anchor'>normalize-anchor</a></li><li><a href='#src/me/panzoo/story.clj/process-files'>process-files</a></li><li><a href='#src/me/panzoo/story.clj/processor'>processor</a></li><li><a href='#src/me/panzoo/story.clj/render-file'>render-file</a></li><li><a href='#src/me/panzoo/story.clj/render-files'>render-files</a></li><li><a href='#src/me/panzoo/story.clj/render-files-'>render-files-</a></li><li><a href='#src/me/panzoo/story.clj/slurp-file|resource'>slurp-file|resource</a></li><li><a href='#src/me/panzoo/story.clj/slurp-resource'>slurp-resource</a></li><li><a href='#src/me/panzoo/story.clj/usage'>usage</a></li><li><a href='#src/me/panzoo/story.clj/with-out-stream'>with-out-stream</a></li><li><a href='#src/me/panzoo/story.clj/wrap-in-tags'>wrap-in-tags</a></li></ul></li><li>resources/page.js<br><ul><li><a href='#resources/page.js/me_panzoo_story_setup'>me_panzoo_story_setup</a></li></ul></li><li>folding.vim<br><ul><li><a href='#folding.vim/MarkdownLevel'>MarkdownLevel</a></li></ul></li></ul></div><script> ;(function()
+</section></article><div id='code-anchors'><ul><li>project.clj<br><ul><li><a href='#project.clj/story'>story</a></li></ul></li><li>src/me/panzoo/story.clj<br><ul><li><a href='#src/me/panzoo/story.clj/*brushes*'>*brushes*</a></li><li><a href='#src/me/panzoo/story.clj/*code-anchors*'>*code-anchors*</a></li><li><a href='#src/me/panzoo/story.clj/*language*'>*language*</a></li><li><a href='#src/me/panzoo/story.clj/*path*'>*path*</a></li><li><a href='#src/me/panzoo/story.clj/*settings*'>*settings*</a></li><li><a href='#src/me/panzoo/story.clj/*single-comment*'>*single-comment*</a></li><li><a href='#src/me/panzoo/story.clj/-main'>-main</a></li><li><a href='#src/me/panzoo/story.clj/?match'>?match</a></li><li><a href='#src/me/panzoo/story.clj/anchor'>anchor</a></li><li><a href='#src/me/panzoo/story.clj/canonical-lang'>canonical-lang</a></li><li><a href='#src/me/panzoo/story.clj/classify-line'>classify-line</a></li><li><a href='#src/me/panzoo/story.clj/classify-lines'>classify-lines</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id'>code-anchor-id</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:clojure'>code-anchor-id :clojure</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:default'>code-anchor-id :default</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:javascript'>code-anchor-id :javascript</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-id-:vim'>code-anchor-id :vim</a></li><li><a href='#src/me/panzoo/story.clj/code-anchor-toc'>code-anchor-toc</a></li><li><a href='#src/me/panzoo/story.clj/comment'>comment</a></li><li><a href='#src/me/panzoo/story.clj/cond-let'>cond-let</a></li><li><a href='#src/me/panzoo/story.clj/each'>each</a></li><li><a href='#src/me/panzoo/story.clj/encode-anchor'>encode-anchor</a></li><li><a href='#src/me/panzoo/story.clj/gather-lines'>gather-lines</a></li><li><a href='#src/me/panzoo/story.clj/gather-lines-'>gather-lines-</a></li><li><a href='#src/me/panzoo/story.clj/heading'>heading</a></li><li><a href='#src/me/panzoo/story.clj/hidden-comment'>hidden-comment</a></li><li><a href='#src/me/panzoo/story.clj/html-escape'>html-escape</a></li><li><a href='#src/me/panzoo/story.clj/html<-'>html&lt;-</a></li><li><a href='#src/me/panzoo/story.clj/html<--:anchor'>html&lt;- :anchor</a></li><li><a href='#src/me/panzoo/story.clj/html<--:code'>html&lt;- :code</a></li><li><a href='#src/me/panzoo/story.clj/html<--:comment'>html&lt;- :comment</a></li><li><a href='#src/me/panzoo/story.clj/html<--:include'>html&lt;- :include</a></li><li><a href='#src/me/panzoo/story.clj/html<--:test-begin'>html&lt;- :test-begin</a></li><li><a href='#src/me/panzoo/story.clj/html<--:test-end'>html&lt;- :test-end</a></li><li><a href='#src/me/panzoo/story.clj/include'>include</a></li><li><a href='#src/me/panzoo/story.clj/include-info'>include-info</a></li><li><a href='#src/me/panzoo/story.clj/inline-brushes'>inline-brushes</a></li><li><a href='#src/me/panzoo/story.clj/inline-css'>inline-css</a></li><li><a href='#src/me/panzoo/story.clj/inline-js'>inline-js</a></li><li><a href='#src/me/panzoo/story.clj/inline-stylesheet'>inline-stylesheet</a></li><li><a href='#src/me/panzoo/story.clj/inline-theme'>inline-theme</a></li><li><a href='#src/me/panzoo/story.clj/javascript-setup'>javascript-setup</a></li><li><a href='#src/me/panzoo/story.clj/lang-brush'>lang-brush</a></li><li><a href='#src/me/panzoo/story.clj/lang-comment'>lang-comment</a></li><li><a href='#src/me/panzoo/story.clj/lang-info'>lang-info</a></li><li><a href='#src/me/panzoo/story.clj/language-aliases'>language-aliases</a></li><li><a href='#src/me/panzoo/story.clj/languages'>languages</a></li><li><a href='#src/me/panzoo/story.clj/lazy-each'>lazy-each</a></li><li><a href='#src/me/panzoo/story.clj/lines-reader'>lines-reader</a></li><li><a href='#src/me/panzoo/story.clj/link-renderer'>link-renderer</a></li><li><a href='#src/me/panzoo/story.clj/look-and-feel'>look-and-feel</a></li><li><a href='#src/me/panzoo/story.clj/map-lines'>map-lines</a></li><li><a href='#src/me/panzoo/story.clj/markdown'>markdown</a></li><li><a href='#src/me/panzoo/story.clj/markdown*'>markdown*</a></li><li><a href='#src/me/panzoo/story.clj/maybe-associate-brush'>maybe-associate-brush</a></li><li><a href='#src/me/panzoo/story.clj/maybe-code-anchor'>maybe-code-anchor</a></li><li><a href='#src/me/panzoo/story.clj/message'>message</a></li><li><a href='#src/me/panzoo/story.clj/normalize-anchor'>normalize-anchor</a></li><li><a href='#src/me/panzoo/story.clj/process-files'>process-files</a></li><li><a href='#src/me/panzoo/story.clj/processor'>processor</a></li><li><a href='#src/me/panzoo/story.clj/read-lines'>read-lines</a></li><li><a href='#src/me/panzoo/story.clj/render-file'>render-file</a></li><li><a href='#src/me/panzoo/story.clj/render-files'>render-files</a></li><li><a href='#src/me/panzoo/story.clj/render-files-'>render-files-</a></li><li><a href='#src/me/panzoo/story.clj/required'>required</a></li><li><a href='#src/me/panzoo/story.clj/slurp-file|resource'>slurp-file|resource</a></li><li><a href='#src/me/panzoo/story.clj/slurp-resource'>slurp-resource</a></li><li><a href='#src/me/panzoo/story.clj/test-begin'>test-begin</a></li><li><a href='#src/me/panzoo/story.clj/test-end'>test-end</a></li><li><a href='#src/me/panzoo/story.clj/usage'>usage</a></li><li><a href='#src/me/panzoo/story.clj/with-out-stream'>with-out-stream</a></li><li><a href='#src/me/panzoo/story.clj/wrap-in-tags'>wrap-in-tags</a></li><li><a href='#src/me/panzoo/story.clj/write-lines'>write-lines</a></li><li><a href='#src/me/panzoo/story.clj/write-production-file'>write-production-file</a></li><li><a href='#src/me/panzoo/story.clj/write-production-tree'>write-production-tree</a></li></ul></li><li>resources/page.js<br><ul><li><a href='#resources/page.js/me_panzoo_story_setup'>me_panzoo_story_setup</a></li></ul></li><li>folding.vim<br><ul><li><a href='#folding.vim/MarkdownLevel'>MarkdownLevel</a></li></ul></li></ul></div><script> ;(function()
 {
 	// CommonJS
 	typeof(require) != 'undefined' ? SyntaxHighlighter = require('shCore').SyntaxHighlighter : null;

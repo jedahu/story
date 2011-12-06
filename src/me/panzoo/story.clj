@@ -822,7 +822,9 @@
                   line)
 
                 (m required)
-                (do (io/copy text (io/file outdir text))
+                (do (if (fs/directory? text)
+                      (fs/copy-tree text (io/file outdir text))
+                      (fs/copy+ text (io/file outdir text)))
                   line)
 
                 :else line))))))))

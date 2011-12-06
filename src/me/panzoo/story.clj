@@ -846,7 +846,7 @@
 
                 (m required)
                 (do (if (fs/directory? text)
-                      (fs/copy-tree text (io/file outdir text))
+                      (fs/copy-tree text (io/file outdir (or (fs/dirname text) "")))
                       (fs/copy+ text (io/file outdir text)))
                   line)
 

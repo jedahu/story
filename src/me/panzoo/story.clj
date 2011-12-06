@@ -905,13 +905,13 @@
       (binding [*settings* {:theme (or (:theme amap) (:theme *settings*))
                             :stylesheet (:stylesheet amap)
                             :static-brushes (:brush amap)
-                            :verbose? (:verbose amap)}
-                *single-comment* (:comment amap)
-                *language* (canonical-lang (or (:language amap) *language*))]
+                            :verbose? (:verbose amap)}]
+        (binding [*single-comment* (or (:comment amap) *single-comment*)]
+          (binding [*language* (canonical-lang (or (:language amap) *language*))]
 
 ; When no output file is given, the program renders to standard-out.
-        (if-let [dir (:production amap)]
-          (write-production-tree tail dir)
-          (if (= 1 (count tail))
-            (process-files tail *out*)
-            (process-files (butlast tail) (last tail))))))))
+            (if-let [dir (:production amap)]
+              (write-production-tree tail dir)
+              (if (= 1 (count tail))
+                (process-files tail *out*)
+                (process-files (butlast tail) (last tail))))))))))

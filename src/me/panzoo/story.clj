@@ -155,6 +155,7 @@
    :vimscript ["\"" "shBrushVimscript.js"]
    :vb ["'" "shBrushVb.js"]
    :vbnet ["'" "shBrushVb.js"]
+   :markdown ["" nil]
    })
 
 (def language-aliases
@@ -177,7 +178,8 @@
    :rb :ruby
    :sass :scss
    :vimscript :vim
-   :vbnet :vb})
+   :vbnet :vb
+   :md :markdown})
 
 
 ; ### Pegdown instances
@@ -648,7 +650,7 @@
           (if (#{:markdown :md} *language*)
 
 ; A markdown file is a special case. It is treated as a single comment block.
-            (html<- [:comment (slurp path)])
+            (each html<- (gather-lines (read-lines path)))
             (do
               (maybe-associate-brush path *language*)
 

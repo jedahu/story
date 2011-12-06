@@ -411,10 +411,17 @@
   []
   (re-pattern (str "^" (Pattern/quote *single-comment*))))
 
+(defn markdown*
+  ""
+  []
+  (if (= :markdown (canonical-lang *language*))
+    (comment)
+    (re-pattern (str (comment) " "))))
+
 (defn markdown
   ""
   []
-  (re-pattern (str (comment) " ")))
+  (re-pattern (str (markdown*) "|" (comment) "$")))
 
 (defn hidden-comment
   "A regular expression matching the beginning of a commented line that will
@@ -430,7 +437,7 @@
 (defn heading
   "A regular expression matching the beginning of a heading line."
   []
-  (re-pattern (str (markdown) "#+ *")))
+  (re-pattern (str (markdown*) "\\#+ *")))
 
 (defn include
   "A regular expression matching the beginning of an include line."
@@ -564,7 +571,7 @@
       (m anchor) [[:anchor text]]
       (m heading) [[:anchor text]
                    [:comment (m markdown)]]
-      (m comment) [[:comment text]]
+      (m markdown) [[:comment text]]
       (m hidden-comment) []
       :else (conj (maybe-code-anchor line (lines-reader lines))
                   [:code line]))))

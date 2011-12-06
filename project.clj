@@ -153,3 +153,4 @@
 ;%include src/me/panzoo/story.clj
 ;%include resources/page.js
 ;%include folding.vim
+;%require resources

@@ -681,8 +681,11 @@
 (defmethod html<- :include [[_ [path comment lang] :as args]]
   (render-file "<section>" path comment lang))
 
-(defmethod html<- :test-begin [_])
-(defmethod html<- :test-end [_])
+(defmethod html<- :test-begin [_]
+  (println "<div class='test'>"))
+
+(defmethod html<- :test-end [_]
+  (println "</div>"))
 
 
 ; ## Look and feel
@@ -796,9 +799,20 @@
 
 
 ; ## Testing
+;
+; Code that is wrapped in test tags `;<?` and `;?>`, where `;` is the comment
+; syntax for the file, will be included in the output by default and wrapped
+; in a `div` with the class `test`. To get a production tree without tests,
+; run this program with the `--production` flag with a directory argument, or
+; call [[write-production-tree]].
+;
+; To include files in the production tree but not in the documentation, use
+; `;%require <file or directory>`, replacing `;` with the correct comment
+; token.
 
 (defn write-production-file
-  ""
+  "Write in-file to outdir with all test code commented (thus preserving line
+  numbers)."
   [in-file outdir]
   (let [out-file (io/file outdir in-file)
         in-test? (atom false)]
@@ -839,7 +853,8 @@
                 :else line))))))))
 
 (defn write-production-tree
-  ""
+  "Write the contents of in-paths with recursive included and required files
+  and directories to outdir, with any test code commented."
   [in-paths outdir]
   (when (fs/exists? outdir)
     (fs/deltree outdir))
@@ -879,6 +894,11 @@
 ; Multiple brushes can be used by repeating the `-b` or `--brush` options.
 ; Additional brushes may be added by the program as a result of file includes
 ; and file suffixes.
+;
+; If present, the `-p` or `--production` option prevents documentation
+; generation, and instead writes a production tree to the supplied directory
+; using [[write-production-tree]].
+
     (if (or (not (seq tail)) (:help amap))
       (do (println (str usage "\n" banner))
         (System/exit 1))

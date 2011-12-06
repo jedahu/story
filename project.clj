@@ -61,6 +61,12 @@
 ;
 ; (defn hello []
 ;   (println "Hello world!"))
+;
+; ;&lt;?
+; (assert (= (hello) "Hello world!"))
+; ;?&gt;
+;
+; ;%require config.xml
 ; 
 ; ;%include fibonacci.clj
 ; ;%include fibonacci.js // javascript
@@ -78,6 +84,13 @@
 ; this information can be obtained from the file extension and the appropriate
 ; brush file pulled in automatically; those languages are listed in the
 ; [[src/me/panzoo/story.clj/Language map]].
+;
+; ### Test code and production
+;
+; Test code can be included inline using `<?` and `?>`, and commented out for
+; production. The `%require` directive marks a file or directory for production
+; use without including it in the documentation. See
+; [[src/me/panzoo/story.clj/Testing]] for more detail.
 ;
 ; ### Internal links
 ;

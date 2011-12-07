@@ -656,19 +656,15 @@
                                    *single-comment*)]
       (binding [*path* path]
         (wrap-in-tags tag
-          (if (#{:markdown :md} *language*)
-
-; A markdown file is a special case. It is treated as a single comment block.
-            (each html<- (gather-lines (read-lines path)))
-            (do
-              (maybe-associate-brush path *language*)
+          (when-not (= :markdown (canonical-lang *language*))
+            (maybe-associate-brush path *language*))
 
 ; Lines of source code are read lazily by `line-seq` and gathered lazily by
 ; `gather-lines`, Along with printing each chunk of comment or code to an
 ; output stream, this ensures that the maximum memory used by this program will
 ; be determined by the largest comment or code chunk and not the total size of
 ; the source file.
-              (each html<- (gather-lines (read-lines path))))))))))
+          (each html<- (gather-lines (read-lines path))))))))
 
 ; Code chunks are wrapped in a `pre` with the correct incantation for
 ; SyntaxHighlighter in its `class` attribute; comments are run through the

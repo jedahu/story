@@ -13,9 +13,9 @@
  ; OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  ;
  ;
- ; The cond-let function is under the following license:
+ ; cond-let, read-lines, and write-lines, are under the following license:
  ;
- ; Copyright (c) Stephen C. Gilardi. All rights reserved.  The use and
+ ; Copyright (c) Rich Hickey. All rights reserved.  The use and
  ; distribution terms for this software are covered by the Eclipse Public
  ; License 1.0 (http://opensource.org/licenses/eclipse-1.0.php) which can
  ; be found in the file epl-v10.html at the root of this distribution.  By
@@ -24,6 +24,15 @@
  ; from this software.
 
 ; # The code
+;
+; The code is Copyright (c) Jeremy Hughes 2011 and is available under the
+; [ISC] license, except for the [[cond-let]],
+; [[read-lines]], and [[write-lines]] functions which are Copyright (c) Rich
+; Hickey and are under the [EPL]. These licenses are in the root of this source
+; distribution in the files `LICENSE` and `epl-v10.html`.
+;
+; [ISC]: http://en.wikipedia.org/wiki/ISC_license
+; [EPL]: http://www.eclipse.org/org/documents/epl-v10.php
 ;
 ; The usual stuff comes first. This code needs to read and write to files,
 ; manipulate strings, and parse Markdown.

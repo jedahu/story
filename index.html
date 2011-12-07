@@ -3556,11 +3556,17 @@ lein uberjar
 
 me_panzoo_story_setup();</pre>
 </section><section><a id='folding.vim/Code-folding-for-Vim'></a>
-<h1>Code folding for Vim</h1><p>Add this code to your <code>~/.vimrc</code> to enable folding of Markdown files and source files with Markdown comments.</p><p>The fold level is determined by the number of <code>#</code> at the start of each heading. Underlined headings are not supported.</p>
+<h1>Code folding for Vim</h1><p>Add this code to your <code>~/.vimrc</code> to enable folding of Markdown files and source files with Markdown comments.</p><p>The fold level is determined by the number of <code>#</code> at the start of each heading. Underlined headings are not supported.</p><p>Test code is also made foldable.</p>
 <a id='folding.vim/MarkdownLevel'></a>
 <pre class='brush: vim'>function! MarkdownLevel(token)
+  if 0 == empty(matchstr(getline(v:lnum), '^'.a:token.'&lt;?'))
+    return 'a1'
+  endif
+  if 0 == empty(matchstr(getline(v:lnum), '^'.a:token.'?&gt;'))
+    return 's1'
+  endif
   let level = strlen(matchstr(getline(v:lnum),
-        \                     '\(^'.a:token.'\)\@&lt;=#\+\( \)\@='))
+        \                     '\(^'.a:token.' \)\@&lt;=#\+\( \)\@='))
   if level == 0
     return "="
   else
@@ -3570,10 +3576,10 @@ endfunction
 </pre>
 <p>Different comment tokens are supported.</p>
 <pre class='brush: vim'>let g:comment#none = ''
-let g:comment#semi = '; '
-let g:comment#slashes = '// '
-let g:comment#hash = '# '
-let g:comment#dblquote = '" '
+let g:comment#semi = ';'
+let g:comment#slashes = '//'
+let g:comment#hash = '#'
+let g:comment#dblquote = '"'
 
 au BufEnter *.md,*.clj,*.cljs,*.js,*.sh setlocal foldmethod=expr
 </pre>

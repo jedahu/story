@@ -2692,7 +2692,7 @@ lein uberjar
 <h3>Programmatic usage</h3><p>Call <code>me.panzoo.story/</code><a href="#src/me/panzoo/story.clj/process-files">process-files</a> with a list of file paths and an output stream or file-path. It may be necessary to set up bindings for one or more of the dynamic variables described in the <a href="#src/me/panzoo/story.clj/Top-level-variables">Top level variables</a> section depending on whether the file suffixes are in the <a href="#src/me/panzoo/story.clj/Language-map">Language map</a> or not.</p><p>The equivalent of the above commandline invocation is: <code>(process-files
 [&quot;project.clj&quot;] &quot;index.html&quot;)</code>.</p>
 <section><a id='src/me/panzoo/story.clj/The-code'></a>
-<h1>The code</h1><p>The usual stuff comes first. This code needs to read and write to files, manipulate strings, and parse Markdown.</p>
+<h1>The code</h1><p>The code is Copyright (c) Jeremy Hughes 2011 and is available under the <a href="http://en.wikipedia.org/wiki/ISC_license">ISC</a> license, except for the <a href="#src/me/panzoo/story.clj/cond-let">cond-let</a>, <a href="#src/me/panzoo/story.clj/read-lines">read-lines</a>, and <a href="#src/me/panzoo/story.clj/write-lines">write-lines</a> functions which are Copyright (c) Rich Hickey and are under the <a href="http://www.eclipse.org/org/documents/epl-v10.php">EPL</a>. These licenses are in the root of this source distribution in the files <code>LICENSE</code> and <code>epl-v10.html</code>.</p><p>The usual stuff comes first. This code needs to read and write to files, manipulate strings, and parse Markdown.</p>
 <pre class='brush: clojure'>(ns me.panzoo.story
   (:refer-clojure :exclude [comment])
   (:require
@@ -3473,7 +3473,7 @@ lein uberjar
 
                 (m required)
                 (do (if (fs/directory? text)
-                      (fs/copy-tree text (io/file outdir text))
+                      (fs/copy-tree text (io/file outdir (or (fs/dirname text) "")))
                       (fs/copy+ text (io/file outdir text)))
                   line)
 
@@ -3520,16 +3520,16 @@ lein uberjar
       (binding [*settings* {:theme (or (:theme amap) (:theme *settings*))
                             :stylesheet (:stylesheet amap)
                             :static-brushes (:brush amap)
-                            :verbose? (:verbose amap)}
-                *single-comment* (:comment amap)
-                *language* (canonical-lang (or (:language amap) *language*))]
+                            :verbose? (:verbose amap)}]
+        (binding [*single-comment* (or (:comment amap) *single-comment*)]
+          (binding [*language* (canonical-lang (or (:language amap) *language*))]
 </pre>
 <p>When no output file is given, the program renders to standard-out.</p>
-<pre class='brush: clojure'>        (if-let [dir (:production amap)]
-          (write-production-tree tail dir)
-          (if (= 1 (count tail))
-            (process-files tail *out*)
-            (process-files (butlast tail) (last tail))))))))</pre>
+<pre class='brush: clojure'>            (if-let [dir (:production amap)]
+              (write-production-tree tail dir)
+              (if (= 1 (count tail))
+                (process-files tail *out*)
+                (process-files (butlast tail) (last tail))))))))))</pre>
 </section><section><a id='resources/page.js/Javascript-setup'></a>
 <h1>Javascript setup</h1><p>This setup code is placed in a function purely to test/show-off story&rsquo;s anchor generation.</p>
 <a id='resources/page.js/me_panzoo_story_setup'></a>

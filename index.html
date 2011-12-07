@@ -3293,15 +3293,11 @@ lein uberjar
                                    *single-comment*)]
       (binding [*path* path]
         (wrap-in-tags tag
-          (if (#{:markdown :md} *language*)
-</pre>
-<p>A markdown file is a special case. It is treated as a single comment block.</p>
-<pre class='brush: clojure'>            (each html&lt;- (gather-lines (read-lines path)))
-            (do
-              (maybe-associate-brush path *language*)
+          (when-not (= :markdown (canonical-lang *language*))
+            (maybe-associate-brush path *language*))
 </pre>
 <p>Lines of source code are read lazily by <code>line-seq</code> and gathered lazily by <code>gather-lines</code>, Along with printing each chunk of comment or code to an output stream, this ensures that the maximum memory used by this program will be determined by the largest comment or code chunk and not the total size of the source file.</p>
-<pre class='brush: clojure'>              (each html&lt;- (gather-lines (read-lines path))))))))))
+<pre class='brush: clojure'>          (each html&lt;- (gather-lines (read-lines path))))))))
 </pre>
 <p>Code chunks are wrapped in a <code>pre</code> with the correct incantation for SyntaxHighlighter in its <code>class</code> attribute; comments are run through the Markdown processor; anchors become hrefless HTML anchors; and includes wrap the result of parsing and rendering the file they point to in <code>section</code> tags.</p>
 <a id='src/me/panzoo/story.clj/html<--:code'></a>

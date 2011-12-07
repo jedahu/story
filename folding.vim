@@ -5,9 +5,17 @@
 "
 " The fold level is determined by the number of `#` at the start of each
 " heading. Underlined headings are not supported.
+"
+" Test code is also made foldable.
 function! MarkdownLevel(token)
+  if 0 == empty(matchstr(getline(v:lnum), '^'.a:token.'<?'))
+    return 'a1'
+  endif
+  if 0 == empty(matchstr(getline(v:lnum), '^'.a:token.'?>'))
+    return 's1'
+  endif
   let level = strlen(matchstr(getline(v:lnum),
-        \                     '\(^'.a:token.'\)\@<=#\+\( \)\@='))
+        \                     '\(^'.a:token.' \)\@<=#\+\( \)\@='))
   if level == 0
     return "="
   else
@@ -17,10 +25,10 @@ endfunction
 
 " Different comment tokens are supported.
 let g:comment#none = ''
-let g:comment#semi = '; '
-let g:comment#slashes = '// '
-let g:comment#hash = '# '
-let g:comment#dblquote = '" '
+let g:comment#semi = ';'
+let g:comment#slashes = '//'
+let g:comment#hash = '#'
+let g:comment#dblquote = '"'
 
 au BufEnter *.md,*.clj,*.cljs,*.js,*.sh setlocal foldmethod=expr
 

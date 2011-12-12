@@ -135,3 +135,30 @@ div#outline > ol > li > a:visited
 {
   color: #535388;
 }
+
+div.test
+{
+  border-left: #9393aa 1px dotted;
+  margin-left: -10px;
+  padding-left: 9px;
+}
+
+div.test-toggle
+{
+  position: absolute;
+  margin-left: -1em;
+  width: 1em;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #9393aa;
+  cursor: pointer;
+}
+
+div#master-toggle
+{
+  margin-left: -1em;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #9393aa;
+  cursor: pointer;
+}

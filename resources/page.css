@@ -80,7 +80,7 @@ div#outline
 div#outline > ol
 { font-size: 0.8em }
 
-div#outline ol ol ol ol
+div#outline ol ol ol ol ol
 {
   display: none;
 }

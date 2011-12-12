@@ -2571,7 +2571,7 @@ div#outline
 div#outline > ol
 { font-size: 0.8em }
 
-div#outline ol ol ol ol
+div#outline ol ol ol ol ol
 {
   display: none;
 }
@@ -2625,6 +2625,33 @@ div#outline > ol > li > a,
 div#outline > ol > li > a:visited
 {
   color: #535388;
+}
+
+div.test
+{
+  border-left: #9393aa 1px dotted;
+  margin-left: -10px;
+  padding-left: 9px;
+}
+
+div.test-toggle
+{
+  position: absolute;
+  margin-left: -1em;
+  width: 1em;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #9393aa;
+  cursor: pointer;
+}
+
+div#master-toggle
+{
+  margin-left: -1em;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #9393aa;
+  cursor: pointer;
 }
  </style>
 <article><a id='project.clj/A-programming-story'></a>
@@ -3552,6 +3579,47 @@ lein uberjar
 
   var h1s = document.getElementsByTagName('h1');
   if (h1s.length &gt; 0) document.title = h1s[0].innerText;
+</pre>
+<p>Test code is hidden by default.</p>
+<pre class='brush: javascript'>  var makeToggle = function(test) {
+    var x = document.createElement('div');
+    x.setAttribute('class', 'test-toggle');
+    x.style.display = 'block';
+    x.innerText = '?';
+    x.onclick = function() {
+      if (test.style.display == 'none') {
+        test.style.display = 'block';
+      } else {
+        test.style.display = 'none';
+      }
+    };
+    return x;
+  };
+  var tests = document.querySelectorAll('div.test');
+  for (var i = 0; i &lt; tests.length; ++i) {
+    console.log('test', i, tests[i]);
+    var test = tests[i];
+    var tog = makeToggle(test);
+    test.style.display = 'none';
+    test.parentNode.insertBefore(tog, test);
+  }
+</pre>
+<p>A master toggle is created if there is more than one test section.</p>
+<pre class='brush: javascript'>  if (tests.length &gt; 1) {
+    var masterTog = document.createElement('div');
+    masterTog.setAttribute('id', 'master-toggle');
+    masterTog.innerText = '? show all';
+    masterTog.onclick = function() {
+      var show = masterTog.innerText == '? show all';
+      var display = show ? 'block' : 'none';
+      masterTog.innerText = show ? '? hide all' : '? show all';
+      for (var i = 0; i &lt; tests.length; ++i) {
+        tests[i].style.display = display;
+      }
+    };
+    var e = document.querySelector('h1').nextSibling;
+    e.parentNode.insertBefore(masterTog, e);
+  }
 }
 
 me_panzoo_story_setup();</pre>
@@ -4669,6 +4737,47 @@ function me_panzoo_story_setup() {
 
   var h1s = document.getElementsByTagName('h1');
   if (h1s.length > 0) document.title = h1s[0].innerText;
+
+// Test code is hidden by default.
+  var makeToggle = function(test) {
+    var x = document.createElement('div');
+    x.setAttribute('class', 'test-toggle');
+    x.style.display = 'block';
+    x.innerText = '?';
+    x.onclick = function() {
+      if (test.style.display == 'none') {
+        test.style.display = 'block';
+      } else {
+        test.style.display = 'none';
+      }
+    };
+    return x;
+  };
+  var tests = document.querySelectorAll('div.test');
+  for (var i = 0; i < tests.length; ++i) {
+    console.log('test', i, tests[i]);
+    var test = tests[i];
+    var tog = makeToggle(test);
+    test.style.display = 'none';
+    test.parentNode.insertBefore(tog, test);
+  }
+
+// A master toggle is created if there is more than one test section.
+  if (tests.length > 1) {
+    var masterTog = document.createElement('div');
+    masterTog.setAttribute('id', 'master-toggle');
+    masterTog.innerText = '? show all';
+    masterTog.onclick = function() {
+      var show = masterTog.innerText == '? show all';
+      var display = show ? 'block' : 'none';
+      masterTog.innerText = show ? '? hide all' : '? show all';
+      for (var i = 0; i < tests.length; ++i) {
+        tests[i].style.display = display;
+      }
+    };
+    var e = document.querySelector('h1').nextSibling;
+    e.parentNode.insertBefore(masterTog, e);
+  }
 }
 
 me_panzoo_story_setup();

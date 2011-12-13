@@ -33,11 +33,15 @@ a:hover
 
 article
 {
+  position: absolute;
+  z-index: 1;
   margin: 0;
-  margin-left: 12em;
+  margin-left: 11em;
   padding: 0;
+  padding-left: 1em;
   width: 38em;
   text-align: justify;
+  background-color: white;
 }
 
 article > h1
@@ -73,7 +77,7 @@ div#outline
 {
   position: fixed;
   top: 2em;
-  left: 0em;
+  left: 0.5em;
   width: 10em;
 }
 
@@ -111,7 +115,7 @@ div#code-anchors ul
   padding-left: 1em;
   padding-right: 0;
   list-style-type: none;
-  text-indent: -1em;
+  text-indent: -2em;
 }
 
 div#outline,

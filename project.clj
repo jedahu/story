@@ -7,13 +7,13 @@
 ;; [MarkDown]: http://daringfireball.net/projects/markdown/
 ;; [SyntaxHighlighter]: http://alexgorbatchev.com/SyntaxHighlighter/
 (defproject
-  me.panzoo/story "0.0.3-SNAPSHOT"
+  story "0.0.3-SNAPSHOT"
 
   :description "A literate programming tool."
 
   ;; The program is written in the [Clojure] language and uses the [pegdown]
   ;; implementation of Markdown with a number of its extensions
-  ;; [enabled](#src/me/panzoo/story.clj/Pegdown-instances).
+  ;; [enabled](#src/story/core.clj/Pegdown-instances).
   ;;
   ;; It uses clojure 1.2.1 for now because that is what [Leiningen] 1.x uses
   ;; and at some stage there will be a lein-story plugin.
@@ -31,7 +31,7 @@
    ;; [m]: https://github.com/jedahu/tools.cli
    [me.panzoo/tools.cli "0.2.2"]]
   
-  :main me.panzoo.story)
+  :main story.core)
 
 ;; Check out the sources at https://github.com/jedahu/story
 ;;
@@ -92,14 +92,14 @@
 ;; use with SyntaxHighlighter. For a number of languages (including javascript)
 ;; this information can be obtained from the file extension and the appropriate
 ;; brush file pulled in automatically; those languages are listed in the
-;; [[src/me/panzoo/story.clj/Language map]].
+;; [[src/story/core.clj/Language map]].
 ;;
 ;; ### Test code and production
 ;;
 ;; Test code can be included inline using `<?` and `?>`, and commented out for
 ;; production. The `%require` directive marks a file or directory for production
 ;; use without including it in the documentation. See
-;; [[src/me/panzoo/story.clj/Testing]] for more detail.
+;; [[src/story/core.clj/Testing]] for more detail.
 ;;
 ;; ### Internal links
 ;;
@@ -107,12 +107,12 @@
 ;; implicit anchors (the names of definitions). Implicit anchors are created
 ;; for Markdown headings (#-style only) and definitions in code (only for
 ;; languages with methods for
-;; `me.panzoo.story/`[[src/me/panzoo/story.clj/code-anchor-id]]; be aware, not
+;; `story.core/`[[src/story/core.clj/code-anchor-id]]; be aware, not
 ;; all methods have been well tested).
 ;;
 ;; Wiki links to anchors in other files must be qualified by the file's path.
 ;; The markup for the link to `code-anchor-id` looks like this:
-;; `[[src/me/panzoo/story.clj/code-anchor-id]]`.
+;; `[[src/story/core.clj/code-anchor-id]]`.
 ;;
 ;; If any anchors for code definitions are created, an alphabetical TOC like
 ;; list of links to those anchors will appear on the right side of the page.
@@ -142,7 +142,7 @@
 ;;
 ;; If `output` is absent, the program's output is streamed to standard-out. For
 ;; more detail run the program with the `--help` option or have a look at the
-;; [[src/me/panzoo/story.clj/Commandline]] section.
+;; [[src/story/core.clj/Commandline]] section.
 ;;
 ;; This HTML document (assuming you are not reading the source file) was created
 ;; by the command: `java -jar story.jar project.clj index.html`.
@@ -150,16 +150,16 @@
 ;;
 ;; ### Programmatic usage
 ;;
-;; Call `me.panzoo.story/`[[src/me/panzoo/story.clj/process-files]] with a list
+;; Call `story.core/`[[src/story/core.clj/process-files]] with a list
 ;; of file paths and an output stream or file-path. It may be necessary to set
 ;; up bindings for one or more of the dynamic variables described in the
-;; [[src/me/panzoo/story.clj/Top level variables]] section depending on whether
-;; the file suffixes are in the [[src/me/panzoo/story.clj/Language map]] or not.
+;; [[src/story/core.clj/Top level variables]] section depending on whether
+;; the file suffixes are in the [[src/story/core.clj/Language map]] or not.
 ;;
 ;; The equivalent of the above commandline invocation is: `(process-files
 ;; ["project.clj"] "index.html")`.
 ;;
-;;%include src/me/panzoo/story.clj
+;;%include src/story/core.clj
 ;;%include resources/page.js
 ;;%include folding.vim
 ;;%require resources

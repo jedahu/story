@@ -38,7 +38,7 @@
 ;;
 ;; The usual stuff comes first. This code needs to read and write to files,
 ;; manipulate strings, and parse Markdown.
-(ns me.panzoo.story
+(ns story.core
   (:refer-clojure :exclude [comment])
   (:require
     [clojure.java.io :as io]

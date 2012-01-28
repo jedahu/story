@@ -79,7 +79,7 @@
 ;; theme to use; which SyntaxHighlighter brushes to include to start with
 ;; (other brushes may be added automatically by the program); what CSS file to
 ;; include if any; and whether to log messages to std-err or not.
-(def ^:dynamic *settings*
+(def ^{:dynamic true} *settings*
   {:theme "shThemeEclipse.css"
    :static-brushes []
    :stylesheet nil
@@ -90,16 +90,16 @@
 ;;
 ;; These variables are rebound for every input file.
 
-(def ^:dynamic *single-comment*
-  "A string containing a single comment token."
+(def ^{:dynamic true} *single-comment*
+  ; "A string containing a single comment token."
   ";;")
 
-(def ^:dynamic *language*
-  "A language string for use with SyntaxHighlighter."
+(def ^{:dynamic true} *language*
+  ; "A language string for use with SyntaxHighlighter."
   :clojure)
 
-(def ^:dynamic *path*
-  "The path of the file currently being processed."
+(def ^{:dynamic true} *path*
+  ; "The path of the file currently being processed."
   nil)
 
 
@@ -108,9 +108,9 @@
 ;; These variables are given bindings only in the [[render-files]] function.
 ;;
 ;; Brushes can be added by the program whenever a new file is processed.
-(def ^:dynamic *brushes* nil)
+(def ^{:dynamic true} *brushes* nil)
 
-(def ^:dynamic *code-anchors* nil)
+(def ^{:dynamic true} *code-anchors* nil)
 
 
 ;; ### Language map
@@ -126,8 +126,8 @@
 ;; canonical equivalent.
 
 (def languages
-  "A map of language names to a pairs of comment syntax and SyntaxHighlighter
-  brush file names."
+  ; "A map of language names to a pairs of comment syntax and SyntaxHighlighter
+  ; brush file names."
   {:clojure [";;" "shBrushClojure.js"]
    :applescript ["--" "shBrushAppleScript.js"]
    :as3 ["//" "shBrushAS3.js"]
@@ -170,7 +170,7 @@
    })
 
 (def language-aliases
-  "A map of aliases to canonical language names."
+  ; "A map of aliases to canonical language names."
   {:clj :clojure
    :cljs :clojure
    :actionscript3 :as3
@@ -202,18 +202,19 @@
 ;; [lr]: http://www.decodified.com/pegdown/api/org/pegdown/LinkRenderer.html
 
 (def processor
-  "A PegDownProcessor set up with the following extensions:
-  AUTOLINKS
-  SMARTYPANTS
-  FENCED_CODE_BLOCKS
-  DEFINITIONS
-  WIKILINKS"
-  (PegDownProcessor. (bit-or
-                       (. Extensions AUTOLINKS)
-                       (. Extensions SMARTYPANTS)
-                       (. Extensions FENCED_CODE_BLOCKS)
-                       (. Extensions DEFINITIONS)
-                       (. Extensions WIKILINKS))))
+  ; "A PegDownProcessor set up with the following extensions:
+  ; AUTOLINKS
+  ; SMARTYPANTS
+  ; FENCED_CODE_BLOCKS
+  ; DEFINITIONS
+  ; WIKILINKS"
+  (PegDownProcessor.
+    (reduce bit-or
+            [(. Extensions AUTOLINKS)
+             (. Extensions SMARTYPANTS)
+             (. Extensions FENCED_CODE_BLOCKS)
+             (. Extensions DEFINITIONS)
+             (. Extensions WIKILINKS)])))
 
 ;; Pegdown's link rendering is overriden for the wiki link case. Un-qualified
 ;; links are given a qualified `href`, and qualified links are given an
@@ -232,8 +233,8 @@
 ;; <a href='#path/to/bar.c/another-link'>another link</a>
 ;; ~~~~
 (def link-renderer
-  "A pegdown LinkRenderer that renders wiki links as links to internal
-  document fragments rather than external HTML pages."
+  ; "A pegdown LinkRenderer that renders wiki links as links to internal
+  ; document fragments rather than external HTML pages."
   (letfn [(def-name [s] (re-find #"(?<=/)[^/]+$" s))
           (anchor-name [s]
             (html-escape (or (def-name s) s)))]

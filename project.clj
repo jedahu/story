@@ -15,15 +15,18 @@
   ;; implementation of Markdown with a number of its extensions
   ;; [enabled](#src/me/panzoo/story.clj/Pegdown-instances).
   ;;
+  ;; It uses clojure 1.2.1 for now because that is what [Leiningen] 1.x uses
+  ;; and at some stage there will be a lein-story plugin.
+  ;;
   ;; [Clojure]: http://clojure.org
   ;; [pegdown]: https://github.com/sirthias/pegdown
   :dependencies
-  [[org.clojure/clojure "1.3.0"]
+  [[org.clojure/clojure "1.2.1"]
    [org.pegdown/pegdown "1.1.0"]
    [fs "0.11.0"]
 
    ;; A [modified][m] `org.clojure/tools.cli` is used (for repeated options).
-   ;; To be merged with upstream by v0.1.0.
+   ;; To be merged with upstream by `0.1.0`.
    ;;
    ;; [m]: https://github.com/jedahu/tools.cli
    [me.panzoo/tools.cli "0.2.2"]]

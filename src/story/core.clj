@@ -56,7 +56,7 @@
     [org.pegdown.ast WikiLinkNode])
 
   ;; To run from the commandline this namespace must be compiled with a `-main`
-  ;; method. When run from the REPL or from Leiningen `gen-class` does nothing.
+  ;; method.
   (:gen-class))
 
 ;; A few of the top level variables use these utility functions.
@@ -825,6 +825,11 @@
   "Take a list of file paths and an output stream, and render each file to the
   stream as HTML."
   [in-paths out]
+  (when-let [d (and
+                 (or (string? out)
+                     (instance? java.io.File out))
+                 (fs/dirname out))]
+    (fs/mkdirs d))
   (with-out-stream out
     (render-files in-paths)))
 
@@ -883,16 +888,55 @@
 
                 :else line))))))))
 
+
+;; ## Entry points
+;;
+;; There are two entry functions and one [[-main]] function for commandline
+;; use.
+;;
+;; The first entry function is for writing a production tree (all required
+;; files sans test sections).
 (defn write-production-tree
   "Write the contents of in-paths with recursive included and required files
   and directories to outdir, with any test code commented."
   [in-paths outdir]
   (when (fs/exists? outdir)
     (fs/deltree outdir))
-  (fs/mkdir outdir)
+  (fs/mkdirs outdir)
   (doseq [p in-paths]
     (write-production-file p outdir)))
 
+;; The second entry function is for building documentation. It takes a map of
+;; options, an output file, and a list of files to process. The options are all
+;; optional but at least one input file must be provided.
+;;
+;; The options are:
+;;
+;; ~~~~
+;; :comment     String           single line comment syntax
+;; :brushes     ISeq of Strings  paths to SyntaxHighlighter brush files
+;; :theme       String           path to a SyntaxHighlighter theme file
+;; :language    String           SyntaxHighlighter language name
+;; :stylesheet  String           path to a CSS file
+;; :verbose     boolean          whether to use verbose output
+;; ~~~~
+;;
+;; For the brush, theme, and stylesheet options the program first tries to read
+;; from the filesystem and if that fails because the file is not found then an
+;; attempt is made to read from the program's resources. The resources contain
+;; the standard SyntaxHighlighter brushes and themes under their normal file
+;; names including an additional `shBrushClojure.js` and `shThemeClojure.css`.
+;;
+;; Additional brushes may be added by the program as a result of file includes
+;; and file suffixes.
+(defn story [opts out-file & in-files]
+  (binding [*settings* {:theme (or (:theme opts) (:theme *settings*))
+                        :stylesheet (:stylesheet opts)
+                        :static-brushes (:brush opts)
+                        :verbose? (:verbose opts)}]
+    (binding [*single-comment* (or (:comment opts) *single-comment*)]
+      (binding [*language* (canonical-lang (or (:language opts) *language*))]
+          (process-files in-files out-file)))))
 
 ;; ## Commandline
 ;;
@@ -915,16 +959,7 @@
                   :default false :flag true]
                  ["-h" "--help" "Show this help" :default false :flag true])]
 
-    ;; For the brush, theme, and stylesheet options the program first tries to
-    ;; read from the filesystem and if that fails because the file is not found
-    ;; then an attempt is made to read from the program's resources. The
-    ;; resources contain the standard SyntaxHighlighter brushes and themes
-    ;; under their normal file names including an additional
-    ;; `shBrushClojure.js` and `shThemeClojure.css`.
-    ;;
     ;; Multiple brushes can be used by repeating the `-b` or `--brush` options.
-    ;; Additional brushes may be added by the program as a result of file
-    ;; includes and file suffixes.
     ;;
     ;; If present, the `-p` or `--production` option prevents documentation
     ;; generation, and instead writes a production tree to the supplied
@@ -933,17 +968,10 @@
     (if (or (not (seq tail)) (:help amap))
       (do (println (str usage "\n" banner))
         (System/exit 1))
-      (binding [*settings* {:theme (or (:theme amap) (:theme *settings*))
-                            :stylesheet (:stylesheet amap)
-                            :static-brushes (:brush amap)
-                            :verbose? (:verbose amap)}]
-        (binding [*single-comment* (or (:comment amap) *single-comment*)]
-          (binding [*language* (canonical-lang (or (:language amap) *language*))]
+      (if-let [dir (:production amap)]
+        (write-production-tree tail dir)
 
-            ;; When no output file is given, the program renders to
-            ;; standard-out.
-            (if-let [dir (:production amap)]
-              (write-production-tree tail dir)
-              (if (= 1 (count tail))
-                (process-files tail *out*)
-                (process-files (butlast tail) (last tail))))))))))
+        ;; When no output file is given, the program renders to standard-out.
+        (if (= 1 (count tail))
+          (apply story amap *out* tail)
+          (apply story amap (last tail) (butlast tail)))))))

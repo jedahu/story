@@ -30,6 +30,9 @@
    ;;
    ;; [m]: https://github.com/jedahu/tools.cli
    [me.panzoo/tools.cli "0.2.2"]]
+
+  ;; When story is used via lein-story, the following map is read.
+  :story {:output "doc/index.html"}
   
   :main story.core)
 

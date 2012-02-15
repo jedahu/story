@@ -567,15 +567,29 @@
 
 (defn include-info
   ""
-  [s]
-  (let [[path & [token lang]] (string/split s #"\s+")
-        lang (canonical-lang (or lang
+  [path & [token & [lang]]]
+  (let [lang (canonical-lang (or lang
                                  (re-find #"(?<=\.)[^/.]+$" path)
                                  *language*))
         comment (or token
                     (lang-comment (or lang *language*))
                     *single-comment*)]
     [path comment lang]))
+
+(defn include-info-from-string
+  ""
+  [s]
+  (apply include-info (take 3 (string/split s #"\s+"))))
+
+(defmacro with-include-info [[path & [token & [lang]]] & body]
+  `(let [[path# comment# lang#] (include-info ~path ~token ~lang)]
+     (binding [*path* path#]
+       (binding [*single-comment* comment#]
+         (binding [*language* lang#]
+           ~@body)))))
+
+(defmacro with-include-info-from-string [s & body]
+  `(with-include-info [~s] ~@body))
 
 ;; Each line of a source file will be either code, comment, anchor, include, or
 ;; test code. Headings are treated as both anchors and comments.
@@ -588,7 +602,7 @@
   (let [m (partial ?match line)]
     (cond-let
       [text]
-      (m include) [[:include (include-info text)]]
+      (m include) [[:include (include-info-from-string text)]]
       (m required) []
       (m begin-test) [[:begin-test text]]
       (m end-test) [[:end-test text]]
@@ -671,25 +685,18 @@
   ;; guessed from the `path` suffix, and if that fails they are set to the
   ;; values they have in the enclsing dynamic scope (i.e., from the commandline
   ;; or the including file).
-  (binding [*language* (canonical-lang
-                         (or lang
-                             (re-find #"(?<=\.)[^/.]+$" path)
-                             *language*))]
-    (binding [*single-comment* (or token
-                                   (lang-comment *language*)
-                                   *single-comment*)]
-      (binding [*path* path]
-        (wrap-in-tags
-          tag
-          (when-not (= :markdown (canonical-lang *language*))
-            (maybe-associate-brush path *language*))
+  (with-include-info [path token lang]
+    (wrap-in-tags
+      tag
+      (when-not (= :markdown (canonical-lang *language*))
+        (maybe-associate-brush path *language*))
 
-          ;; Lines of source code are read lazily by `line-seq` and gathered
-          ;; lazily by `gather-lines`, Along with printing each chunk of
-          ;; comment or code to an output stream, this ensures that the maximum
-          ;; memory used by this program will be determined by the largest
-          ;; comment or code chunk and not the total size of the source file.
-          (each html<- (gather-lines (read-lines path))))))))
+      ;; Lines of source code are read lazily by `line-seq` and gathered
+      ;; lazily by `gather-lines`, Along with printing each chunk of
+      ;; comment or code to an output stream, this ensures that the maximum
+      ;; memory used by this program will be determined by the largest
+      ;; comment or code chunk and not the total size of the source file.
+      (each html<- (gather-lines (read-lines path))))))
 
 ;; Code chunks are wrapped in a `pre` with the correct incantation for
 ;; SyntaxHighlighter in its `class` attribute; comments are run through the
@@ -873,17 +880,19 @@
               (cond-let
                 [text]
                 (m include)
-                (let [[path comment lang] (include-info text)]
-                  (binding [*path* path]
-                    (binding [*single-comment* comment]
-                      (binding [*language* lang]
-                        (write-production-file path outdir))))
+                (with-include-info-from-string text
+                  (write-production-file text outdir)
                   line)
-
                 (m required)
                 (do (if (fs/directory? text)
-                      (fs/copy-tree text (io/file outdir (or (fs/dirname text) "")))
-                      (fs/copy+ text (io/file outdir text)))
+                      (fs/walk
+                        (fn [_ _ files]
+                          (doseq [f files]
+                            (with-include-info-from-string [f]
+                              (write-production-file f outdir))))
+                        text)
+                      (with-include-info-from-string text
+                        (write-production-file text outdir)))
                   line)
 
                 :else line))))))))
